@@ -37,8 +37,9 @@ except Exception:
     pass
 
 try:
-    desktop = os.path.join(os.environ["USERPROFILE"], "Desktop", "cnlb_fehler.txt")
-    efh = logging.FileHandler(desktop, encoding="utf-8", mode="w")
+    exe_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+    err_log = os.path.join(exe_dir, "cnlb_fehler.txt")
+    efh = logging.FileHandler(err_log, encoding="utf-8", mode="w")
     efh.setLevel(logging.ERROR)
     efh.setFormatter(logging.Formatter("%(asctime)s\n%(message)s", datefmt="%H:%M:%S"))
     log.addHandler(efh)
