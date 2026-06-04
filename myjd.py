@@ -16,6 +16,24 @@ class MyJDownloader:
         log.info("Verbinde mit MyJDownloader...")
         self._api.connect(self.email, self.password)
         log.info("Verbunden")
+        self._start_keepalive()
+
+    def _start_keepalive(self):
+        import threading
+
+        def ping():
+            while True:
+                import time
+                time.sleep(4 * 3600)
+                try:
+                    if self._api.is_connected():
+                        self._api.list_devices()
+                        log.debug("Keepalive: Session aktiv")
+                except Exception:
+                    log.warning("Keepalive: Session abgelaufen, wird bei nächstem Aufruf erneuert")
+
+        t = threading.Thread(target=ping, daemon=True, name="myjd-keepalive")
+        t.start()
 
     def list_devices(self):
         devices = self._api.list_devices()
@@ -41,12 +59,17 @@ class MyJDownloader:
             return func(*args, **kwargs)
         except Exception as e:
             err_str = str(e).lower()
-            if "token" in err_str or "bad" in err_str or "unauthorized" in err_str:
-                log.info(f"API-Fehler ({e}), versuche Neuverbindung...")
-                self._api.connect(self.email, self.password)
-                self._device = None
-                self.list_devices()
-                return func(*args, **kwargs)
+            log.info(f"API-Fehler, versuche Neuverbindung: {e}")
+            for attempt in range(3):
+                try:
+                    self._api.connect(self.email, self.password)
+                    self._device = None
+                    self.list_devices()
+                    return func(*args, **kwargs)
+                except Exception as e2:
+                    log.warning(f"Neuverbindung {attempt+1}/3 fehlgeschlagen: {e2}")
+                    import time
+                    time.sleep(2)
             raise
 
     def add_links(self, urls, package_name=None, passwords=None, autostart=False):
