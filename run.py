@@ -68,46 +68,19 @@ def handle_uninstall(from_gui=False):
     if from_gui:
         import tkinter as tk
         from tkinter import messagebox
+        from tkinter.simpledialog import Dialog
 
-        confirm = tk.BooleanVar(value=False)
-        dlg = tk.Toplevel()
-        dlg.title("Deinstallieren")
-        dlg.resizable(False, False)
-        dlg.transient()
-        dlg.grab_set()
-        dlg.configure(bg="#f0f0f0")
-        tk.Label(dlg, text="Soll Click'n'Load Bridge wirklich vollständig entfernt werden?",
-                 font=("Segoe UI", 10, "bold"), bg="#f0f0f0").pack(pady=(16, 4), padx=20, anchor="w")
-
-        items = [
-            ("1.", "Laufende Bridge beenden"),
-            ("2.", "Autostart-Aufgabe entfernen (Task Scheduler)"),
-            ("3.", "Startmenü-Verknüpfung löschen"),
-            ("4.", f"Programmdateien löschen\n    {INSTALL_DIR}"),
-            ("5.", f"Konfiguration löschen\n    {CONFIG_DIR}"),
-            ("6.", "Registry-Eintrag entfernen (Apps & Features)"),
-        ]
-        for num, text in items:
-            frame = tk.Frame(dlg, bg="#f0f0f0")
-            frame.pack(fill="x", padx=20, pady=2)
-            tk.Label(frame, text=num, font=("Segoe UI", 9, "bold"), bg="#f0f0f0",
-                     width=2, anchor="e").pack(side="left")
-            tk.Label(frame, text=text, font=("Segoe UI", 9), bg="#f0f0f0",
-                     anchor="w", justify="left").pack(side="left", fill="x")
-
-        btn_frame = tk.Frame(dlg, bg="#f0f0f0")
-        btn_frame.pack(pady=(12, 16))
-        tk.Button(btn_frame, text="Ja, deinstallieren", width=18,
-                  command=lambda: [confirm.set(True), dlg.destroy()]).pack(side="left", padx=6)
-        tk.Button(btn_frame, text="Abbrechen", width=18,
-                  command=dlg.destroy).pack(side="left", padx=6)
-
-        dlg.update_idletasks()
-        w = max(520, dlg.winfo_reqwidth() + 40)
-        dlg.geometry(f"{w}x{dlg.winfo_reqheight()}")
-        dlg.eval("tk::PlaceWindow %s center" % dlg.winfo_pathname(dlg.winfo_id()))
-        dlg.wait_window()
-        if not confirm.get():
+        result = messagebox.askyesno(
+            "Deinstallieren",
+            "Soll Click'n'Load Bridge wirklich vollständig entfernt werden?\n\n"
+            "1. Laufende Bridge beenden\n"
+            "2. Autostart-Aufgabe entfernen\n"
+            "3. Startmenü-Verknüpfung löschen\n"
+            "4. Programmdateien löschen\n"
+            "5. Konfiguration löschen\n"
+            "6. Registry-Eintrag entfernen"
+        )
+        if not result:
             return
 
     log.info("Deinstalliere ...")
