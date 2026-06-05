@@ -919,21 +919,23 @@ def main():
         user32 = ctypes.windll.user32
         if not kernel32.GetConsoleWindow():
             kernel32.AllocConsole()
+        hwnd_console = kernel32.GetConsoleWindow()
+        if hwnd_console:
+            kernel32.SetConsoleTitleW("ClickNLoad Bridge - Debug")
         sys.stdout = open("CONOUT$", "w", encoding="utf-8")
         sys.stderr = open("CONOUT$", "w", encoding="utf-8")
         con_handler = logging.StreamHandler(sys.stdout)
         con_handler.setLevel(logging.DEBUG)
         con_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S"))
         log.addHandler(con_handler)
-        if not show_console:
-            hwnd = kernel32.GetConsoleWindow()
-            if hwnd:
-                user32.ShowWindow(hwnd, 0)
+        if not show_console and hwnd_console:
+            user32.ShowWindow(hwnd_console, 0)
 
         host = config.get("listen_host", "127.0.0.1")
         port = config.get("cnl_port", 9666)
 
-        log.info("Starte ClickNLoad Bridge...")
+        log.info("=== ClickNLoad Bridge ===")
+        log.info("Starte ...")
         log.info(f"Device: {config['myjd_device_name']}")
 
         myjd.connect()
