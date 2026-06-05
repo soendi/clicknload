@@ -269,7 +269,25 @@ def show_popup(title, message, duration=None, package_name=None, urls_count=0, a
         else:
             global _active_toasts
             try:
+                idx = _active_toasts.index(popup_root)
                 _active_toasts.remove(popup_root)
+                for i in range(idx, len(_active_toasts)):
+                    t = _active_toasts[i]
+                    cx = int(t.winfo_x())
+                    cy = int(t.winfo_y())
+                    target_y = cy + popup_h + 10
+                    steps = 8
+                    def slide(w, start_y, to_y, st=8):
+                        def tick(step=0):
+                            if step >= st:
+                                w.geometry(f"+{cx}+{to_y}")
+                                return
+                            frac = (step + 1) / st
+                            cur_y = int(start_y + (to_y - start_y) * frac)
+                            w.geometry(f"+{cx}+{cur_y}")
+                            w.after(20, lambda: tick(step + 1))
+                        tick()
+                    slide(t, cy, target_y, steps)
             except Exception:
                 pass
             popup_root.destroy()
