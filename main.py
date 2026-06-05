@@ -543,6 +543,7 @@ def handle_form_post(params, raw_body=None):
     passwords = params.get("passwords", [])
     source = params.get("source", [None])[0]
 
+    log.info("1/4 CNL2-Daten empfangen – entschlüssele ...")
     log.debug(f"handle_form_post: crypted={crypted[:50] if crypted else None!r}, jk={jk_str[:80] if jk_str else None!r}")
 
     if isinstance(passwords, list):
@@ -550,10 +551,12 @@ def handle_form_post(params, raw_body=None):
 
     try:
         if crypted and jk_str:
+            log.info("2/4 CNL2 entschlüsselt – extrahiere URLs ...")
             key_str = extract_key_from_js(jk_str)
             log.info(f"Key aus JS: {key_str!r}")
             decrypted = decode_crypted(crypted, key_str)
             log.info(f"Entschluesselt ({len(decrypted)} Zeichen): {decrypted[:300]}")
+            log.info("3/4 URLs extrahiert – sende an MyJDownloader ...")
 
             try:
                 parsed = json.loads(decrypted)
@@ -585,7 +588,7 @@ class CNLHandler(http.server.BaseHTTPRequestHandler):
         content_length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(content_length)
         ct = self.headers.get("Content-Type", "")
-        log.info(f"POST {self.path} von {self.client_address[0]} ({len(body)} Bytes)")
+        log.info(f"CNL2-POST {self.path} empfangen ({len(body)} Bytes)")
 
         dump_path = os.path.join(CONFIG_DIR, "raw_requests.log")
         try:
@@ -652,6 +655,7 @@ class CNLHandler(http.server.BaseHTTPRequestHandler):
 
             def send_and_notify():
                 try:
+                    log.info("4/4 Sende URLs an MyJDownloader ...")
                     myjd.add_links(urls, package_name=package_name, passwords=passwords, autostart=autostart_downloads)
                     log.info(f"{len(urls)} Link(s) erfolgreich gesendet")
                     notify("ClickNLoad Bridge", f"{len(urls)} Link(s) an JDownloader gesendet",
