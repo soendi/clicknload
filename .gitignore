@@ -4,3 +4,5 @@ build/
 *.spec
 __pycache__/
 *.pyc
+cnlb_fehler.txt
+test_config/
