@@ -261,7 +261,19 @@ def show_setup_wizard(prefill=None):
         ttk.Label(frame, text=label, font=("Segoe UI", 10)).grid(
             row=row, column=0, sticky="w", pady=6
         )
-        entry = ttk.Entry(frame, font=("Segoe UI", 10))
+        if label == "Gerätename":
+            entry = ttk.Combobox(frame, font=("Segoe UI", 10), values=[field_defaults[label]])
+            entry.configure(state="normal")
+            def on_cb_select(*_):
+                status_var.set("")
+                if entry.get():
+                    device_val = entry.get()
+                    if device_val not in entry.cget("values"):
+                        entry.configure(values=list(entry.cget("values")) + [device_val])
+            entry.bind("<<ComboboxSelected>>", on_cb_select)
+            entry.bind("<KeyRelease>", on_cb_select)
+        else:
+            entry = ttk.Entry(frame, font=("Segoe UI", 10))
         entry.grid(row=row, column=1, columnspan=5, sticky="ew", padx=(12, 8), pady=6)
         entry.insert(0, field_defaults[label])
         if label == "Passwort":
@@ -444,31 +456,24 @@ def show_setup_wizard(prefill=None):
             api.connect(email, pw)
             devices = api.list_devices()
             names = [d.get("name", "?") for d in (devices or [])]
-            if device:
-                if device not in names:
-                    api.disconnect()
-                    messagebox.showerror("Fehler",
-                        f"Gerät '{device}' nicht gefunden.\n"
-                        f"Verf\u00fcgbare Geräte: {', '.join(names)}")
-                    status_var.set("")
-                    return
-            else:
-                if len(names) == 1:
-                    entries["Gerätename"].delete(0, "end")
-                    entries["Gerätename"].insert(0, names[0])
-                    device = names[0]
-                elif len(names) == 0:
-                    api.disconnect()
-                    messagebox.showerror("Fehler", "Kein Gerät in MyJDownloader gefunden.")
-                    status_var.set("")
-                    return
-                else:
-                    api.disconnect()
-                    messagebox.showerror("Fehler",
-                        f"Bitte Gerätenamen auswählen.\n"
-                        f"Verf\u00fcgbare Geräte: {', '.join(names)}")
-                    status_var.set("")
-                    return
+            cb = entries["Gerätename"]
+            cb.configure(values=names)
+            if not device and len(names) == 1:
+                cb.delete(0, "end")
+                cb.insert(0, names[0])
+                device = names[0]
+            elif not device and len(names) == 0:
+                api.disconnect()
+                messagebox.showerror("Fehler", "Kein Gerät in MyJDownloader gefunden.")
+                status_var.set("")
+                return
+            elif not device:
+                cb.delete(0, "end")
+                cb.set("")
+                status_var.set(f"Gerät auswählen: {', '.join(names)}")
+                root.update()
+                api.disconnect()
+                return
             api.disconnect()
         except Exception as e:
             status_var.set("")
