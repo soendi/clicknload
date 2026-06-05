@@ -114,19 +114,13 @@ def _ensure_rsa_key():
         _cnl_rsa_pubkey_b64 = base64.b64encode(_cnl_rsa_key.publickey().export_key("DER")).decode()
 
 
-_active_toast = None
+_active_toasts = []
 
 def notify(title, message, duration=None, package_name=None, urls_count=0, autostart=False):
     if not show_toast:
         return
     if duration is None:
         duration = toast_duration
-    global _active_toast
-    if _active_toast is not None:
-        try:
-            _active_toast.destroy()
-        except Exception:
-            pass
     import threading
     threading.Thread(target=show_popup, args=(title, message),
                      kwargs={"duration": duration, "package_name": package_name,
@@ -140,9 +134,7 @@ def show_popup(title, message, duration=None, package_name=None, urls_count=0, a
     import tkinter as tk
     import threading
 
-    global _active_toast
     popup_root = tk.Tk()
-    _active_toast = popup_root
     popup_root.overrideredirect(True)
     popup_root.attributes("-topmost", True)
     popup_root.configure(bg="#2d2d2d")
@@ -164,7 +156,13 @@ def show_popup(title, message, duration=None, package_name=None, urls_count=0, a
     popup_w = 380
     popup_h = 160
     x = screen_w - popup_w - 10
-    y = screen_h - taskbar_h - popup_h - 10
+
+    global _active_toasts
+    _active_toasts.append(popup_root)
+    idx = len(_active_toasts) - 1
+    y = screen_h - taskbar_h - popup_h - 10 - idx * (popup_h + 10)
+    if y < 0:
+        y = 10
 
     popup_root.geometry(f"{popup_w}x{popup_h}+{x}+{y}")
     popup_root.resizable(False, False)
@@ -269,8 +267,11 @@ def show_popup(title, message, duration=None, package_name=None, urls_count=0, a
         if step < steps:
             popup_root.after(20, lambda: fade_out(step + 1))
         else:
-            global _active_toast
-            _active_toast = None
+            global _active_toasts
+            try:
+                _active_toasts.remove(popup_root)
+            except Exception:
+                pass
             popup_root.destroy()
 
     acc_bar.place(x=0, y=popup_h - 3, relwidth=0, height=3)
