@@ -928,12 +928,17 @@ def main():
         hwnd_console = kernel32.GetConsoleWindow()
         if hwnd_console:
             kernel32.SetConsoleTitleW("ClickNLoad Bridge - Debug")
+            STD_OUTPUT_HANDLE = -11
+            console_handle = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+            if console_handle and console_handle != -1:
+                kernel32.WriteConsoleW(console_handle, "Console initialized\r\n", 21, None, None)
         sys.stdout = open("CONOUT$", "w", encoding="utf-8")
         sys.stderr = open("CONOUT$", "w", encoding="utf-8")
         con_handler = logging.StreamHandler(sys.stdout)
         con_handler.setLevel(logging.DEBUG)
         con_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S"))
         log.addHandler(con_handler)
+        log.info("Console-Handler aktiv")
         if not show_console and hwnd_console:
             user32.ShowWindow(hwnd_console, 0)
 
