@@ -695,7 +695,7 @@ class CNLHandler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split("?")[0].rstrip("/")
-        log.info(f"GET {path} von {self.client_address[0]}")
+        log.info(f"GET {self.path} von {self.client_address[0]}")
 
         if path == "/jdcheck.js":
             self.send_response(200)

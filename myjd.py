@@ -1,5 +1,6 @@
 import myjdapi
 import logging
+import time
 
 log = logging.getLogger("cnl")
 
@@ -23,7 +24,6 @@ class MyJDownloader:
 
         def ping():
             while True:
-                import time
                 time.sleep(4 * 3600)
                 try:
                     if self._api.is_connected():
@@ -46,6 +46,14 @@ class MyJDownloader:
         raise Exception(f"Device '{self.device_name}' nicht gefunden. Verfügbar: {names}")
 
     def _ensure_connected(self):
+        now = time.time()
+        if now - getattr(self, "_last_call", 0) > 1200:
+            log.info("Token altert (20min), erneuere vorbeugend ...")
+            try:
+                self._api.connect(self.email, self.password)
+            except Exception:
+                pass
+            self._device = None
         if not self._api.is_connected():
             log.info("Token abgelaufen, verbinde neu...")
             self._api.connect(self.email, self.password)
@@ -56,7 +64,9 @@ class MyJDownloader:
     def _call(self, func, *args, **kwargs):
         self._ensure_connected()
         try:
-            return func(*args, **kwargs)
+            result = func(*args, **kwargs)
+            self._last_call = time.time()
+            return result
         except Exception as e:
             err_str = str(e).lower()
             log.info(f"API-Fehler, versuche Neuverbindung: {e}")
@@ -68,7 +78,6 @@ class MyJDownloader:
                     return func(*args, **kwargs)
                 except Exception as e2:
                     log.warning(f"Neuverbindung {attempt+1}/3 fehlgeschlagen: {e2}")
-                    import time
                     time.sleep(2)
             raise
 
