@@ -23,16 +23,22 @@ for h in logging.root.handlers[:]:
         logging.root.removeHandler(h)
 
 log = logging.getLogger("cnl")
+log.setLevel(logging.DEBUG)
 
 CONFIG_DIR = os.path.join(os.environ.get("APPDATA", os.path.dirname(os.path.abspath(__file__))), "ClickNLoad Bridge")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
 try:
     os.makedirs(CONFIG_DIR, exist_ok=True)
-    fh = logging.FileHandler(os.path.join(CONFIG_DIR, "bridge.log"), encoding="utf-8")
+    fh = logging.FileHandler(os.path.join(CONFIG_DIR, "bridge.log"), encoding="utf-8", mode="a")
     fh.setLevel(logging.DEBUG)
     fh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S"))
     log.addHandler(fh)
+    fh.acquire()
+    try:
+        fh.stream.write("=== Logging gestartet ===\n")
+    finally:
+        fh.release()
 except Exception:
     pass
 
