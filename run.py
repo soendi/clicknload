@@ -565,6 +565,9 @@ def is_admin():
         return False
 
 def main():
+    subprocess.run(["taskkill", "/f", "/fi", f"PID ne {os.getpid()}", "/im", "ClickNLoadBridge.exe"],
+                   capture_output=True, timeout=10)
+
     if len(sys.argv) > 1:
         if sys.argv[1] == "/uninstall":
             handle_uninstall()
