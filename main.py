@@ -116,8 +116,31 @@ def _ensure_rsa_key():
     global _cnl_rsa_key, _cnl_rsa_pubkey_b64
     if _cnl_rsa_key is None:
         from Crypto.PublicKey import RSA as RSAKey
-        _cnl_rsa_key = RSAKey.generate(2048)
-        _cnl_rsa_pubkey_b64 = base64.b64encode(_cnl_rsa_key.publickey().export_key("DER")).decode()
+        from Crypto.Cipher import PKCS1_OAEP
+        import json
+        rsa_path = os.path.join(CONFIG_DIR, "cnl_rsa_key.json")
+        try:
+            with open(rsa_path, "r") as f:
+                data = json.load(f)
+            priv_pem = data["priv"]
+            pub_b64 = data["pub"]
+            _cnl_rsa_key = RSAKey.import_key(priv_pem)
+            _cnl_rsa_pubkey_b64 = pub_b64
+            log.info("RSA-Schlüssel aus Config geladen")
+        except Exception:
+            log.info("Erzeuge neuen 2048-Bit RSA-Schlüssel ...")
+            _cnl_rsa_key = RSAKey.generate(2048)
+            _cnl_rsa_pubkey_b64 = base64.b64encode(
+                _cnl_rsa_key.publickey().export_key("DER")
+            ).decode()
+            try:
+                with open(rsa_path, "w") as f:
+                    json.dump({
+                        "priv": _cnl_rsa_key.export_key("PEM").decode(),
+                        "pub": _cnl_rsa_pubkey_b64
+                    }, f)
+            except Exception:
+                pass
 
 
 _active_toasts = []
