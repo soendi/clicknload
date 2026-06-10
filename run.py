@@ -205,6 +205,7 @@ def setup_startup_shortcut():
         f"$ws = New-Object -ComObject WScript.Shell; "
         f"$s = $ws.CreateShortcut('{STARTUP_LNK}'); "
         f"$s.TargetPath = '{target}'; "
+        f"$s.Arguments = '/start'; "
         f"$s.WorkingDirectory = '{os.path.dirname(target)}'; "
         f"$s.Description = 'ClickNLoad Bridge'; "
         f"$s.Save()"
