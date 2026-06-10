@@ -116,7 +116,7 @@ def _ensure_rsa_key():
     global _cnl_rsa_key, _cnl_rsa_pubkey_b64
     if _cnl_rsa_key is None:
         from Crypto.PublicKey import RSA as RSAKey
-        _cnl_rsa_key = RSAKey.generate(1024)
+        _cnl_rsa_key = RSAKey.generate(2048)
         _cnl_rsa_pubkey_b64 = base64.b64encode(_cnl_rsa_key.publickey().export_key("DER")).decode()
 
 
