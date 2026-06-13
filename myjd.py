@@ -79,6 +79,12 @@ class MyJDownloader:
                 except Exception as e2:
                     log.warning(f"Neuverbindung {attempt+1}/3 fehlgeschlagen: {e2}")
                     time.sleep(2)
+            log.error(f"MyJDownloader-Verbindung verloren – wechsle auf rotes Icon")
+            try:
+                from main import set_tray_icon_red
+                set_tray_icon_red()
+            except Exception:
+                pass
             raise
 
     def add_links(self, urls, package_name=None, passwords=None, autostart=False):
