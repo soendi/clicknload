@@ -790,19 +790,19 @@ class ThreadedHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     daemon_threads = True
 
 
-def _make_icon(bg, fg):
+def _make_icon(bg, arrow):
     size = 64
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
     draw.ellipse([2, 2, size - 2, size - 2], fill=bg)
     cx, cy = size // 2, size // 2
-    draw.rectangle([cx - 4, size // 4, cx + 4, cy + 4], fill=fg)
+    draw.rectangle([cx - 4, size // 4, cx + 4, cy + 4], fill=arrow)
     draw.polygon([
         (cx - 14, cy + 4), (cx + 14, cy + 4), (cx, cy + 20)
-    ], fill=fg)
+    ], fill=arrow)
     return img
 
-GREEN_TRAY_ICON = _make_icon("#2ecc71", "#ffffff")
+GREEN_TRAY_ICON = _make_icon("#2ecc71", "#000000")
 RED_TRAY_ICON   = _make_icon("#e74c3c", "#ffffff")
 
 def create_tray_icon():
