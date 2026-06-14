@@ -113,6 +113,26 @@ class MyJDownloader:
         log.info(f"Linkgrabber Job-ID: {result.get('id')}")
         return result
 
+    def remove_offline_packages(self, package_name=None):
+        lg = self._device.linkgrabber
+        pkgs = self._call(lg.query_packages)
+        if not pkgs:
+            return []
+        removed = []
+        for p in pkgs:
+            offline = p.get("availableOfflineCount", 0)
+            online = p.get("availableOnlineCount", 0)
+            unknown = p.get("availableUnknownCount", 0)
+            temp_unk = p.get("availableTempUnknownCount", 0)
+            total = p.get("childCount", 1)
+            if temp_unk == 0 and (online + offline + unknown) == total and offline > 0:
+                if package_name and not p.get("name", "").startswith(package_name[:60]):
+                    continue
+                self._call(lg.remove_links, [], [str(p.get("uuid"))])
+                log.info(f"Paket gelöscht: {p.get('name','?')} ({offline}/{total} offline)")
+                removed.append({"name": p.get("name", "?"), "offline": offline, "total": total})
+        return removed
+
     def add_dlc(self, dlc_content, autostart=False):
         self._ensure_connected()
         import base64

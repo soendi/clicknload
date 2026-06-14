@@ -669,6 +669,15 @@ class CNLHandler(http.server.BaseHTTPRequestHandler):
                     log.info(f"{len(urls)} Link(s) erfolgreich gesendet")
                     notify("ClickNLoad Bridge", f"{len(urls)} Link(s) an JDownloader gesendet",
                            package_name=package_name, urls_count=len(urls), autostart=autostart_downloads)
+                    import time
+                    time.sleep(8)
+                    removed = myjd.remove_offline_packages(package_name=package_name)
+                    if removed:
+                        for r in removed:
+                            log.info(f"Offline-Paket entfernt: {r['name']}")
+                            notify("ClickNLoad Bridge", f"Paket gelöscht",
+                                   package_name=r['name'],
+                                   urls_count=r['offline'], autostart=False)
                 except Exception as e:
                     log.error(f"Fehler beim Senden: {e}")
                     notify("ClickNLoad Bridge", f"Fehler: {e}", duration=8)
