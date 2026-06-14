@@ -230,21 +230,22 @@ def show_popup(title, message, duration=None, package_name=None, urls_count=0, a
                            font=("Segoe UI", 11, "bold"), wraplength=340)
             lbl.pack(fill="x", pady=(0, 2), padx=5)
             lbl.config(anchor="w", justify="left")
-        if urls_count:
+        if warning and urls_count:
+            lbl = tk.Label(body, text=f"Gel\u00f6scht ({urls_count} offline)",
+                           bg=colors["bg"], fg="#e74c3c",
+                           font=("Segoe UI", 10, "bold"))
+            lbl.pack(fill="x", pady=(0, 2), padx=5)
+            lbl.config(anchor="w", justify="left")
+        elif urls_count:
             lbl = tk.Label(body, text=f"{urls_count} Link(s) \u00fcbertragen",
                            bg=colors["bg"], fg=colors["text"],
                            font=("Segoe UI", 10))
             lbl.pack(fill="x", pady=(0, 2), padx=5)
             lbl.config(anchor="w", justify="left")
 
-        if urls_count:
-            if warning:
-                status_text = f"Paket gel\u00f6scht \u2013 ({urls_count} offline)"
-                status_color = "#e74c3c"
-            else:
-                status_text = "Downloads werden automatisch gestartet." if autostart else "Links sind im Linkgrabber."
-                status_color = "#888888"
-            lbl = tk.Label(body, text=status_text, bg=colors["bg"], fg=status_color,
+        if urls_count and not warning:
+            status_text = "Downloads werden automatisch gestartet." if autostart else "Links sind im Linkgrabber."
+            lbl = tk.Label(body, text=status_text, bg=colors["bg"], fg="#888888",
                            font=("Segoe UI", 9))
             lbl.pack(fill="x", pady=(6, 0), padx=5)
             lbl.config(anchor="w", justify="left")
