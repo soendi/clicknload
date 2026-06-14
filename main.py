@@ -125,7 +125,7 @@ def _ensure_rsa_key():
 
 _active_toasts = []
 
-def notify(title, message, duration=None, package_name=None, urls_count=0, autostart=False):
+def notify(title, message, duration=None, package_name=None, urls_count=0, autostart=False, warning=False):
     if not show_toast:
         return
     if duration is None:
@@ -133,11 +133,12 @@ def notify(title, message, duration=None, package_name=None, urls_count=0, autos
     import threading
     threading.Thread(target=show_popup, args=(title, message),
                      kwargs={"duration": duration, "package_name": package_name,
-                             "urls_count": urls_count, "autostart": autostart},
+                             "urls_count": urls_count, "autostart": autostart,
+                             "warning": warning},
                      daemon=False).start()
 
 
-def show_popup(title, message, duration=None, package_name=None, urls_count=0, autostart=False):
+def show_popup(title, message, duration=None, package_name=None, urls_count=0, autostart=False, warning=False):
     if duration is None:
         duration = toast_duration
     import tkinter as tk
@@ -237,8 +238,13 @@ def show_popup(title, message, duration=None, package_name=None, urls_count=0, a
             lbl.config(anchor="w", justify="left")
 
         if urls_count:
-            status_text = "Downloads werden automatisch gestartet." if autostart else "Links sind im Linkgrabber."
-            lbl = tk.Label(body, text=status_text, bg=colors["bg"], fg="#888888",
+            if warning:
+                status_text = f"Paket gel\u00f6scht \u2013 ({urls_count} offline)"
+                status_color = "#e74c3c"
+            else:
+                status_text = "Downloads werden automatisch gestartet." if autostart else "Links sind im Linkgrabber."
+                status_color = "#888888"
+            lbl = tk.Label(body, text=status_text, bg=colors["bg"], fg=status_color,
                            font=("Segoe UI", 9))
             lbl.pack(fill="x", pady=(6, 0), padx=5)
             lbl.config(anchor="w", justify="left")
@@ -997,24 +1003,21 @@ def main():
                 notify("ClickNLoad Bridge", f"DLC-Fehler: {e}", duration=8)
         start_dlc_watcher(download_dir, on_dlc_file)
 
-        _notified_offline = set()
+        import time
 
         def offline_checker():
+            time.sleep(10)
             while True:
-                import time
-                time.sleep(30)
                 try:
                     removed = myjd.remove_offline_packages()
                     for r in removed:
-                        key = (r["name"], r["offline"])
-                        if key not in _notified_offline:
-                            _notified_offline.add(key)
-                            log.info(f"Offline-Paket entfernt: {r['name']}")
-                            notify("ClickNLoad Bridge", "Paket gel\u00f6scht",
-                                   package_name=r["name"],
-                                   urls_count=r["offline"], autostart=False)
+                        log.info(f"Offline-Paket entfernt: {r['name']} ({r['offline']}/{r['total']})")
+                        notify("ClickNLoad Bridge", "Paket gel\u00f6scht",
+                               package_name=r["name"],
+                               urls_count=r["offline"], autostart=False, warning=True)
                 except Exception:
                     pass
+                time.sleep(30)
 
         threading.Thread(target=offline_checker, daemon=True, name="offline-checker").start()
 
