@@ -117,20 +117,24 @@ class MyJDownloader:
         lg = self._device.linkgrabber
         pkgs = self._call(lg.query_packages)
         if not pkgs:
+            log.debug("remove_offline: keine Pakete im Linkgrabber")
             return []
         removed = []
+        log.debug(f"remove_offline: {len(pkgs)} Pakete gefunden")
         for p in pkgs:
+            name = p.get("name", "?")
             offline = p.get("availableOfflineCount", 0)
             online = p.get("availableOnlineCount", 0)
             unknown = p.get("availableUnknownCount", 0)
             temp_unk = p.get("availableTempUnknownCount", 0)
             total = p.get("childCount", 1)
+            log.debug(f"  Paket '{name}': online={online} offline={offline} unknown={unknown} temp_unk={temp_unk} total={total}")
             if temp_unk == 0 and (online + offline + unknown) == total and offline > 0:
-                if package_name and not p.get("name", "").startswith(package_name[:60]):
+                if package_name and not name.startswith(package_name[:60]):
                     continue
                 self._call(lg.remove_links, [], [str(p.get("uuid"))])
-                log.info(f"Paket gelöscht: {p.get('name','?')} ({offline}/{total} offline)")
-                removed.append({"name": p.get("name", "?"), "offline": offline, "total": total})
+                log.info(f"Paket gelöscht: {name} ({offline}/{total} offline)")
+                removed.append({"name": name, "offline": offline, "total": total})
         return removed
 
     def add_dlc(self, dlc_content, autostart=False):
