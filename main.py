@@ -676,6 +676,14 @@ class CNLHandler(http.server.BaseHTTPRequestHandler):
                     log.info(f"{len(urls)} Link(s) erfolgreich gesendet")
                     notify("ClickNLoad Bridge", f"{len(urls)} Link(s) an JDownloader gesendet",
                            package_name=package_name, urls_count=len(urls), autostart=autostart_downloads)
+                    import time
+                    time.sleep(10)
+                    removed = myjd.remove_offline_packages(package_name=package_name)
+                    for r in removed:
+                        log.info(f"Offline-Paket entfernt: {r['name']} ({r['offline']}/{r['total']})")
+                        notify("ClickNLoad Bridge", "Paket gel\u00f6scht",
+                               package_name=r["name"],
+                               urls_count=r["offline"], autostart=False, warning=True)
                 except Exception as e:
                     log.error(f"Fehler beim Senden: {e}")
                     notify("ClickNLoad Bridge", f"Fehler: {e}", duration=8)
@@ -1003,24 +1011,6 @@ def main():
                 log.error(f"DLC-Fehler beim Senden: {e}")
                 notify("ClickNLoad Bridge", f"DLC-Fehler: {e}", duration=8)
         start_dlc_watcher(download_dir, on_dlc_file)
-
-        import time
-
-        def offline_checker():
-            time.sleep(10)
-            while True:
-                try:
-                    removed = myjd.remove_offline_packages()
-                    for r in removed:
-                        log.info(f"Offline-Paket entfernt: {r['name']} ({r['offline']}/{r['total']})")
-                        notify("ClickNLoad Bridge", "Paket gel\u00f6scht",
-                               package_name=r["name"],
-                               urls_count=r["offline"], autostart=False, warning=True)
-                except Exception:
-                    pass
-                time.sleep(30)
-
-        threading.Thread(target=offline_checker, daemon=True, name="offline-checker").start()
 
         if HAS_SYSTRAY:
             log.info("Systray-Icon aktiv")
