@@ -109,11 +109,13 @@ class MyJDownloader:
             params["downloadPassword"] = passwords[0] if passwords else ""
 
         log.info(f"Sende {len(urls)} Links an '{self.device_name}'")
+        self._ensure_connected()
         result = self._call(self._device.linkgrabber.add_links, [params])
         log.info(f"Linkgrabber Job-ID: {result.get('id')}")
         return result
 
     def remove_offline_packages(self, package_name=None):
+        self._ensure_connected()
         lg = self._device.linkgrabber
         pkgs = self._call(lg.query_packages)
         if not pkgs:
