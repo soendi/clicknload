@@ -5,7 +5,7 @@ import threading
 
 log = logging.getLogger("cnl")
 
-POLL_INTERVAL = 3
+POLL_INTERVAL = 1
 
 
 def start_dlc_watcher(download_dir, on_dlc_file):
