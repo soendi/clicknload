@@ -663,13 +663,8 @@ class CNLHandler(http.server.BaseHTTPRequestHandler):
             urls = [u.strip() for u in urls if u.strip()]
 
             if not urls:
-                log.warning("Keine URLs gefunden – filecrypt.cc hat leere Daten gesendet")
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.send_header("Access-Control-Allow-Origin", "*")
-                self.end_headers()
-                self.wfile.write(json.dumps({"success": True, "urls": 0,
-                    "hint": "DLC-Button statt CNL2 verwenden – Bridge verarbeitet DLC automatisch"}).encode())
+                log.warning("Keine URLs gefunden")
+                self.send_error(400, "Keine URLs gefunden")
                 return
 
             log.info(f"Empfangen: {len(urls)} URL(s) | Package: {package_name or '-'}")
