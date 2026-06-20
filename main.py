@@ -313,6 +313,75 @@ def show_popup(title, message, duration=None, package_name=None, urls_count=0, a
     popup_root.mainloop()
 
 
+def show_offline_choice(pkg_name, offline, total, timeout=10):
+    import tkinter as tk
+    result = None
+    root = tk.Tk()
+    root.overrideredirect(True)
+    root.attributes("-topmost", True)
+    root.configure(bg=bg_color)
+    sw = root.winfo_screenwidth()
+    sh = root.winfo_screenheight()
+    try:
+        import ctypes
+        rect = ctypes.wintypes.RECT()
+        ctypes.windll.user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(rect), 0)
+        taskbar_h = sh - rect.bottom
+    except Exception:
+        taskbar_h = 40
+    w, h = 400, 200
+    x = sw - w - 10
+    y = sh - taskbar_h - h - 10
+    root.geometry(f"{w}x{h}+{x}+{y}")
+    disp_name = pkg_name if len(pkg_name) <= 70 else pkg_name[:65] + " ..."
+    tk.Label(root, text=disp_name, bg=bg_color, fg=text_color,
+             font=("Segoe UI", 10, "bold"), wraplength=380, anchor="w",
+             justify="left").pack(pady=(12, 2), padx=12, anchor="w")
+    tk.Label(root, text=f"{offline}/{total} Links offline", bg=bg_color, fg="#e74c3c",
+             font=("Segoe UI", 10), anchor="w", justify="left").pack(pady=(0, 6), padx=12, anchor="w")
+    tk.Label(root, text="Paket l\u00f6schen?", bg=bg_color, fg=text_color,
+             font=("Segoe UI", 10), anchor="w", justify="left").pack(pady=(0, 8), padx=12, anchor="w")
+    btn_frame = tk.Frame(root, bg=bg_color)
+    btn_frame.pack(padx=12)
+    countdown = [timeout]
+
+    def on_delete():
+        nonlocal result
+        result = "delete"
+        root.destroy()
+
+    def on_keep():
+        nonlocal result
+        result = "keep"
+        root.destroy()
+
+    def on_show():
+        nonlocal result
+        result = "show"
+        root.destroy()
+
+    def tick():
+        countdown[0] -= 1
+        if countdown[0] <= 0:
+            on_delete()
+            return
+        ja_btn.config(text=f"Ja ({countdown[0]}s)")
+        root.after(1000, tick)
+
+    ja_btn = tk.Button(btn_frame, text=f"Ja ({timeout}s)", command=on_delete,
+                       width=14, bg="#e74c3c", fg="white", font=("Segoe UI", 9))
+    ja_btn.pack(side="left", padx=3)
+    tk.Button(btn_frame, text="Nein", command=on_keep,
+              width=14, font=("Segoe UI", 9)).pack(side="left", padx=3)
+    tk.Button(btn_frame, text="MyJDownloader", command=on_show,
+              width=14, font=("Segoe UI", 9)).pack(side="left", padx=3)
+
+    root.after(1000, tick)
+    root.grab_set()
+    root.wait_window()
+    return result or "delete"
+
+
 def rsa_decrypt_jk(jk_b64):
     _ensure_rsa_key()
     from Crypto.Cipher import PKCS1_OAEP
@@ -680,10 +749,16 @@ class CNLHandler(http.server.BaseHTTPRequestHandler):
                     time.sleep(10)
                     removed = myjd.remove_offline_packages(package_name=package_name)
                     for r in removed:
-                        log.info(f"Offline-Paket entfernt: {r['name']} ({r['offline']}/{r['total']})")
-                        notify("ClickNLoad Bridge", "Paket gel\u00f6scht",
-                               package_name=r["name"],
-                               urls_count=r["offline"], autostart=False, warning=True)
+                        log.info(f"Offline-Paket gefunden: {r['name']} ({r['offline']}/{r['total']})")
+                        decision = show_offline_choice(r["name"], r["offline"], r["total"])
+                        if decision == "delete":
+                            myjd._call(myjd._device.linkgrabber.remove_links, [], [str(r["uuid"])])
+                            log.info(f"Paket gelöscht: {r['name']}")
+                            notify("ClickNLoad Bridge", "Paket gel\u00f6scht",
+                                   package_name=r["name"], urls_count=r["offline"], autostart=False, warning=True)
+                        elif decision == "show":
+                            import webbrowser
+                            webbrowser.open("https://my.jdownloader.org")
                 except Exception as e:
                     log.error(f"Fehler beim Senden: {e}")
                     notify("ClickNLoad Bridge", f"Fehler: {e}", duration=8)

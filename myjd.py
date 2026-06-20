@@ -132,10 +132,8 @@ class MyJDownloader:
             total = p.get("childCount", 1)
             log.debug(f"  Paket '{name}': online={online} offline={offline} unknown={unknown} temp_unk={temp_unk} total={total}")
             if temp_unk == 0 and offline > 0 and online + offline + unknown == total:
-                log.info(f"Offline erkannt: {offline}/{total} offline – lösche Paket '{name}'")
-                self._call(lg.remove_links, [], [str(p.get("uuid"))])
-                log.info(f"Paket gelöscht: {name} ({offline}/{total} offline)")
-                removed.append({"name": name, "offline": offline, "total": total})
+                log.info(f"Offline erkannt: {offline}/{total} offline – Paket '{name}'")
+                removed.append({"name": name, "offline": offline, "total": total, "uuid": p.get("uuid")})
         return removed
 
     def add_dlc(self, dlc_content, autostart=False):
