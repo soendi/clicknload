@@ -6,3 +6,4 @@ __pycache__/
 *.pyc
 cnlb_fehler.txt
 test_config/
+cookies.txt
