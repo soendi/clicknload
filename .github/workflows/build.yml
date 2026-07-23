@@ -1,4 +1,4 @@
-name: Build MSI
+name: Build & Release
 
 on:
   push:
@@ -16,17 +16,19 @@ jobs:
         with:
           python-version: '3.14'
 
-      - name: Install dependencies
+      - name: Install Python dependencies
         run: |
-          python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pyinstaller
 
-      - name: Build EXE with PyInstaller
+      - name: Build EXE
         run: |
           pyinstaller --onefile --windowed --uac-admin --name "ClickNLoadBridge" --version-file version_info.txt --icon icon.ico --hidden-import myjd --hidden-import main --hidden-import dlc --hidden-import pythoncom --hidden-import win32com.client --hidden-import win32com --collect-all pywin32 run.py --distpath dist
 
       - name: Setup WiX
-        run: dotnet tool install --global wix --version 4.0.5 2>$null
+        run: |
+          dotnet tool install --global wix --version 4.0.5 2>$null
+          wix extension add WixToolset.UI.wixext 2>$null
 
       - name: Build MSI
         run: wix build Installer\Product.wxs -o dist\ClickNLoadBridge_Setup.msi -arch x64 -bindpath "dist\;."
@@ -35,4 +37,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${{ github.ref_name }} dist\ClickNLoadBridge_Setup.msi --title "${{ github.ref_name }}" --notes "Automatischer Build"
+          gh release delete ${{ github.ref_name }} --yes 2>$null
+          gh release create ${{ github.ref_name }} dist\ClickNLoadBridge.exe dist\ClickNLoadBridge_Setup.msi --title "${{ github.ref_name }}" --notes "Siehe CHANGELOG"
