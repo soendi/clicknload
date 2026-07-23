@@ -318,6 +318,53 @@ def show_popup(title, message, duration=None, package_name=None, urls_count=0, a
     popup_root.mainloop()
 
 
+def show_update_dialog(version):
+    import tkinter as tk
+    result = None
+    root = tk.Tk()
+    root.overrideredirect(True)
+    root.attributes("-topmost", True)
+    root.configure(bg=bg_color)
+    sw = root.winfo_screenwidth()
+    sh = root.winfo_screenheight()
+    try:
+        import ctypes
+        rect = ctypes.wintypes.RECT()
+        ctypes.windll.user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(rect), 0)
+        taskbar_h = sh - rect.bottom
+    except Exception:
+        taskbar_h = 40
+    w, h = 380, 160
+    x = sw - w - 10
+    y = sh - taskbar_h - h - 10
+    root.geometry(f"{w}x{h}+{x}+{y}")
+    tk.Label(root, text="Neue Version verfügbar", bg=bg_color, fg=toast_color,
+             font=("Segoe UI", 12, "bold")).pack(pady=(16, 4), padx=16, anchor="w")
+    tk.Label(root, text=f"v{version}    (aktuell v{CURRENT_VERSION})", bg=bg_color, fg=text_color,
+             font=("Segoe UI", 10)).pack(pady=(0, 12), padx=16, anchor="w")
+
+    def on_yes():
+        nonlocal result
+        result = "download"
+        root.destroy()
+
+    def on_no():
+        nonlocal result
+        result = "skip"
+        root.destroy()
+
+    btn_frame = tk.Frame(root, bg=bg_color)
+    btn_frame.pack(padx=16, pady=(0, 16))
+    tk.Button(btn_frame, text="Ja", command=on_yes, width=16,
+              font=("Segoe UI", 10, "bold")).pack(side="left", padx=4)
+    tk.Button(btn_frame, text="Nein", command=on_no, width=16,
+              font=("Segoe UI", 10)).pack(side="left", padx=4)
+
+    root.grab_set()
+    root.wait_window()
+    return result or "skip"
+
+
 def show_offline_choice(pkg_name, offline, total, timeout=10):
     import tkinter as tk
     result = None
@@ -396,8 +443,15 @@ def check_for_update(icon_item=None):
             remote = data.get("version", "")
             if remote and remote > CURRENT_VERSION:
                 log.info(f"Update verfügbar: {remote} (aktuell {CURRENT_VERSION})")
-                notify("ClickNLoad Bridge", f"Update {remote} verfügbar\nDownload: {RELEASES_URL}",
-                       duration=15)
+                decision = show_update_dialog(remote)
+                if decision == "download":
+                    import urllib.request, os, tempfile, subprocess
+                    msi_url = f"https://github.com/soendi/clicknload/releases/download/v{remote}/ClickNLoadBridge_Setup.msi"
+                    tmp = os.path.join(tempfile.gettempdir(), "ClickNLoadBridge_Setup.msi")
+                    log.info(f"Lade Update v{remote} herunter...")
+                    urllib.request.urlretrieve(msi_url, tmp)
+                    log.info("Download abgeschlossen, starte Installation...")
+                    subprocess.Popen(["msiexec", "/i", tmp, "/qn"])
             else:
                 log.info(f"Kein Update (aktuell {CURRENT_VERSION})")
                 notify("ClickNLoad Bridge", f"Kein Update verfügbar\nAktuelle Version: {CURRENT_VERSION}", duration=6)
