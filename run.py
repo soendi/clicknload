@@ -575,6 +575,9 @@ def main():
         if sys.argv[1] == "/start":
             if config_exists():
                 start_bridge()
+            else:
+                log.info("Keine Config – starte Assistent")
+                show_setup_wizard()
             return
 
     if "/install" in sys.argv:
