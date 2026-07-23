@@ -914,6 +914,11 @@ def run_with_systray(server):
     def on_exit(icon_item):
         icon.stop()
 
+    def on_restart(icon_item):
+        icon.stop()
+        import subprocess, sys
+        subprocess.Popen([sys.executable, "/start"])
+
     def on_toggle_autostart(icon_item):
         global autostart_downloads
         autostart_downloads = not autostart_downloads
@@ -1008,6 +1013,7 @@ def run_with_systray(server):
         pystray.MenuItem("Toasts", toast_sub),
         pystray.MenuItem("Konsole anzeigen", on_toggle_console, checked=lambda x: show_console),
         pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Neustart", on_restart),
         pystray.MenuItem("Beenden", on_exit),
     )
 
