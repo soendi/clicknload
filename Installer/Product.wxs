@@ -2,7 +2,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
     <Package Name="ClickNLoad Bridge"
              Manufacturer="Lukas Sonderegger"
-             Version="1.0.0.0"
+             Version="1.0.1.0"
              UpgradeCode="c0ffeec0-c0ff-eec0-ffee-c0ffeec0ffee"
              Scope="perMachine">
         <Icon Id="AppIcon" SourceFile="icon.ico" />
