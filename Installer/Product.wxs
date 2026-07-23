@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+    <Package Name="ClickNLoad Bridge"
+             Manufacturer="Lukas Sonderegger"
+             Version="1.0.0.0"
+             UpgradeCode="c0ffeec0-c0ff-eec0-ffee-c0ffeec0ffee"
+             Scope="perMachine">
+        <Icon Id="AppIcon" SourceFile="icon.ico" />
+        <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+
+        <MajorUpgrade DowngradeErrorMessage="A newer version of [ProductName] is already installed."
+                      AllowSameVersionUpgrades="yes"
+                      Schedule="afterInstallValidate" />
+        <MediaTemplate EmbedCab="yes" />
+
+        <Property Id="ARPHELPLINK" Value="https://github.com/soendi/clicknload" />
+        <Property Id="ARPURLINFOABOUT" Value="https://github.com/soendi/clicknload" />
+        <Property Id="ARPCOMMENTS" Value="ClickNLoad Bridge - leitet CNL2/DLC-Links an MyJDownloader weiter" />
+        <Property Id="ARPURLUPDATEINFO" Value="https://github.com/soendi/clicknload/releases" />
+
+        <Property Id="ApplicationFolderName" Value="ClickNLoad Bridge" />
+        <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
+
+        <Feature Id="MainFeature"
+                 Title="ClickNLoad Bridge"
+                 Description="Installs the ClickNLoad Bridge application"
+                 Level="1"
+                 ConfigurableDirectory="INSTALLFOLDER">
+            <ComponentGroupRef Id="ProductComponents" />
+            <ComponentRef Id="ApplicationShortcut" />
+        </Feature>
+
+        <StandardDirectory Id="ProgramFiles64Folder">
+            <Directory Id="INSTALLFOLDER" Name="ClickNLoad Bridge" />
+        </StandardDirectory>
+
+        <StandardDirectory Id="ProgramMenuFolder">
+            <Directory Id="ApplicationProgramsFolder" Name="ClickNLoad Bridge">
+                <Component Id="ApplicationShortcut" Guid="c0ffeec0-c0ff-eec0-ffee-c0ffeec0ffee">
+                    <Shortcut Id="ApplicationStartMenuShortcut"
+                              Name="ClickNLoad Bridge"
+                              Description="CNL2/DLC to MyJDownloader Bridge"
+                              Target="[#ClickNLoadBridgeEXE]"
+                              WorkingDirectory="INSTALLFOLDER"
+                              Arguments="/start" />
+                    <RegistryValue Root="HKCU"
+                                   Key="Software\ClickNLoadBridge"
+                                   Name="installed"
+                                   Type="integer"
+                                   Value="1"
+                                   KeyPath="yes" />
+                    <RemoveFolder Id="RemoveApplicationProgramsFolder"
+                                  On="uninstall" />
+                </Component>
+            </Directory>
+        </StandardDirectory>
+
+        <ComponentGroup Id="ProductComponents">
+            <Component Id="MainExecutable" Directory="INSTALLFOLDER" Guid="c0ffeec0-c0ff-eec0-ffee-c0ffeec0ffed">
+                <File Id="ClickNLoadBridgeEXE"
+                      Source="dist\ClickNLoadBridge.exe"
+                      Name="ClickNLoadBridge.exe"
+                      KeyPath="yes" />
+            </Component>
+            <Component Id="AppIcon" Directory="INSTALLFOLDER" Guid="c0ffeec0-c0ff-eec0-ffee-c0ffeec0ff88">
+                <File Id="AppIconFile"
+                      Source="icon.ico"
+                      Name="icon.ico"
+                      KeyPath="yes" />
+            </Component>
+        </ComponentGroup>
+
+        <CustomAction Id="LaunchApp" FileRef="ClickNLoadBridgeEXE" ExeCommand="/start"
+                      Execute="immediate" Return="asyncNoWait" />
+        <InstallExecuteSequence>
+            <Custom Action="LaunchApp" After="InstallFinalize" Condition="NOT Installed" />
+        </InstallExecuteSequence>
+    </Package>
+</Wix>

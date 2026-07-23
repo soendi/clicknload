@@ -102,6 +102,11 @@ def save_config():
 _tray_icon = None
 _tray_pystray = None
 
+CURRENT_VERSION = "1.0.0.0"
+VERSION_URL = "https://raw.githubusercontent.com/soendi/clicknload/master/version.json"
+MSI_NAME = "ClickNLoadBridge_Setup.msi"
+RELEASES_URL = "https://github.com/soendi/clicknload/releases"
+
 try:
     import pystray
     from PIL import Image, ImageDraw
@@ -380,6 +385,27 @@ def show_offline_choice(pkg_name, offline, total, timeout=10):
     root.grab_set()
     root.wait_window()
     return result or "delete"
+
+
+def check_for_update(icon_item=None):
+    import urllib.request, urllib.error, json
+    try:
+        req = urllib.request.Request(VERSION_URL, headers={"User-Agent": "ClickNLoadBridge"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+            remote = data.get("version", "")
+            if remote and remote > CURRENT_VERSION:
+                log.info(f"Update verfügbar: {remote} (aktuell {CURRENT_VERSION})")
+                notify("ClickNLoad Bridge", f"Update {remote} verfügbar\nDownload: {RELEASES_URL}",
+                       duration=15)
+            else:
+                log.info(f"Kein Update (aktuell {CURRENT_VERSION})")
+                notify("ClickNLoad Bridge", f"Kein Update verfügbar\nAktuelle Version: {CURRENT_VERSION}", duration=6)
+    except Exception as e:
+        log.warning(f"Update-Check fehlgeschlagen: {e}")
+        notify("ClickNLoad Bridge", f"Update-Check fehlgeschlagen", duration=6)
+    if icon_item:
+        pass
 
 
 def rsa_decrypt_jk(jk_b64):
@@ -1012,6 +1038,8 @@ def run_with_systray(server):
         pystray.MenuItem("Downloads direkt starten", on_toggle_autostart, checked=lambda x: autostart_downloads),
         pystray.MenuItem("Toasts", toast_sub),
         pystray.MenuItem("Konsole anzeigen", on_toggle_console, checked=lambda x: show_console),
+        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Nach Updates suchen", check_for_update),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("Neustart", on_restart),
         pystray.MenuItem("Beenden", on_exit),
