@@ -35,7 +35,7 @@ Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 [Tasks]
 Name: "desktopicon"; Description: "Desktopverknüpfung"; GroupDescription: "Zusätzliche Symbole:"; Flags: checkedonce
 Name: "autostart"; Description: "Mit Windows starten"; GroupDescription: "Autostart:"
-Name: "systray"; Description: "Direkt in den Systray starten"; GroupDescription: "Autostart:"; Flags: disabled
+Name: "systray"; Description: "Direkt in den Systray starten"; GroupDescription: "Autostart:"; Flags: unchecked
 
 [Files]
 Source: "..\dist\ClickNLoadBridge.exe"; DestDir: "{app}"; Flags: ignoreversion
