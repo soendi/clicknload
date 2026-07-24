@@ -14,7 +14,7 @@ import winreg
 
 log = logging.getLogger("cnl")
 
-CURRENT_VERSION = "1.0.27.0"
+CURRENT_VERSION = "1.0.28.0"
 RELEASES_API = "https://api.github.com/repos/soendi/clicknload/releases?per_page=10"
 
 REGISTRY_KEY = r"Software\ClickNLoadBridge"
@@ -602,7 +602,7 @@ class MainWindow:
             self._tray_pystray.menu = menu
             self._tray_pystray.update_menu()
         except Exception as e:
-            log.warning(f"Tray-Menü Update fehlgeschlagen: {e}")
+            log.warning(f"Tray-MenÃ¼ Update fehlgeschlagen: {e}")
 
     def _show_about(self):
         messagebox.showinfo("\u00dcber ClickNLoad Bridge",
