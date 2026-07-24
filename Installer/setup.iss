@@ -57,3 +57,56 @@ Root: HKCU; Subkey: "Software\ClickNLoadBridge"; Flags: uninsdeletekey
 
 [UninstallRun]
 Filename: "{app}\{#MyAppExeName}"; Parameters: "/uninstall"; Flags: runhidden
+
+[Code]
+const
+  APP_NAME = 'ClickNLoad Bridge';
+
+procedure CreateAutostartTask(ExePath: String);
+var
+  ResultCode: Integer;
+begin
+  Exec('powershell', '-NoProfile -Command "'
+    + '$action = New-ScheduledTaskAction -Execute ''' + ExePath + ''' -Argument ''/start'';'
+    + '$trigger = New-ScheduledTaskTrigger -AtLogon;'
+    + '$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 0);'
+    + 'Register-ScheduledTask -TaskName ''' + APP_NAME + ''' -Action $action -Trigger $trigger -Settings $settings -Force"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+procedure RemoveAutostartTask;
+var
+  ResultCode: Integer;
+begin
+  Exec('powershell', '-NoProfile -Command "'
+    + 'Unregister-ScheduledTask -TaskName ''' + APP_NAME + ''' -Confirm:$false -ErrorAction SilentlyContinue"',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+procedure SetSystrayRegistry;
+var
+  ResultCode: Integer;
+begin
+  Exec('reg', 'add HKCU\Software\ClickNLoadBridge /v start_in_systray /t REG_SZ /d 1 /f',
+    '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  ExePath: String;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    ExePath := ExpandConstant('{app}\{#MyAppExeName}');
+    if IsTaskSelected('autostart') then
+      CreateAutostartTask(ExePath);
+    if IsTaskSelected('systray') then
+      SetSystrayRegistry;
+  end;
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  if CurUninstallStep = usPostUninstall then
+    RemoveAutostartTask;
+end;

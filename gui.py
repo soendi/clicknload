@@ -87,28 +87,15 @@ class MainWindow:
         self.root.minsize(700, 500)
         self.root.configure(bg=self.BG)
 
-        try:
-            import ctypes
-            hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id())
-            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-            ctypes.windll.dwmapi.DwmSetWindowAttribute(
-                hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
-                ctypes.byref(ctypes.c_int(1)), ctypes.sizeof(ctypes.c_int))
-        except Exception:
-            pass
-
+        self._apply_dark_titlebar()
         self._apply_ttk_style()
-
-        try:
-            ico = tk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "icon.ico"))
-            self.root.iconphoto(True, ico)
-        except Exception:
-            pass
+        self._set_icon()
 
         self.tray_icon = None
         self.bridge_thread = None
         self.myjd = None
         self._tray_pystray = None
+        self._bridge_running = False
 
         self._build_menu()
         self._build_ui()
@@ -117,6 +104,49 @@ class MainWindow:
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self.root.bind("<Unmap>", self._on_minimize)
+
+    def _apply_dark_titlebar(self):
+        try:
+            import ctypes
+            try:
+                ctypes.windll.shcore.SetProcessDpiAwareness(1)
+            except Exception:
+                try:
+                    ctypes.windll.user32.SetProcessDPIAware()
+                except Exception:
+                    pass
+            self.root.update_idletasks()
+            hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id())
+            for attr in (20, 19):
+                try:
+                    val = ctypes.c_int(1)
+                    ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                        hwnd, attr, ctypes.byref(val), ctypes.sizeof(val))
+                except Exception:
+                    continue
+            try:
+                color = ctypes.c_int(0x1e1e1e)
+                ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                    hwnd, 34, ctypes.byref(color), ctypes.sizeof(color))
+            except Exception:
+                pass
+        except Exception:
+            pass
+
+    def _set_icon(self):
+        base = os.path.dirname(sys.argv[0]) if getattr(sys, 'frozen', False) else os.path.dirname(__file__)
+        path = os.path.join(base, "icon.ico")
+        if os.path.exists(path):
+            try:
+                self.root.iconbitmap(path)
+            except Exception:
+                pass
+            return
+        if getattr(sys, 'frozen', False):
+            try:
+                self.root.iconbitmap(default=sys.executable)
+            except Exception:
+                pass
 
     def _apply_ttk_style(self):
         s = ttk.Style()
@@ -129,7 +159,7 @@ class MainWindow:
 
         s.configure("TNotebook", background=self.BG, borderwidth=0)
         s.configure("TNotebook.Tab", background=self.BG2, foreground=self.FG,
-                     padding=[14, 6], font=("Segoe UI", 10))
+                     padding=[18, 8], font=("Segoe UI", 10))
         s.map("TNotebook.Tab",
                background=[("selected", self.BG3)],
                foreground=[("selected", self.ACCENT)])
@@ -155,15 +185,15 @@ class MainWindow:
     def _build_menu(self):
         menubar = tk.Menu(self.root, bg=self.BG2, fg=self.FG,
                            activebackground=self.BG4, activeforeground=self.ACCENT,
-                           borderwidth=0)
+                           borderwidth=1, highlightbackground=self.BG2)
         datei = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
                          activebackground=self.BG4, activeforeground=self.ACCENT,
-                         borderwidth=0)
+                         borderwidth=1, highlightbackground=self.BG2)
         datei.add_command(label="Beenden", command=self._on_exit)
         menubar.add_cascade(label="Datei", menu=datei)
         hilfe = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
                          activebackground=self.BG4, activeforeground=self.ACCENT,
-                         borderwidth=0)
+                         borderwidth=1, highlightbackground=self.BG2)
         hilfe.add_command(label="Nach Updates suchen", command=self.check_for_update)
         hilfe.add_separator()
         hilfe.add_command(label="\u00dcber", command=self._show_about)
@@ -276,11 +306,10 @@ class MainWindow:
         self.port_field.grid(row=row, column=1, sticky="w", padx=6, pady=2)
         row += 1
 
-        btn_frame_conn = tk.Frame(main, bg=self.BG)
-        btn_frame_conn.grid(row=row, column=1, sticky="w", pady=4)
-        btn(btn_frame_conn, "Verbinden", self._test_connection).pack(side="left")
-        self.conn_status = tk.Label(btn_frame_conn, text="", fg=self.GREEN, bg=self.BG)
-        self.conn_status.pack(side="left", padx=(8, 0))
+        btn_conn = btn(main, "Verbinden", self._test_connection)
+        btn_conn.grid(row=row, column=1, sticky="w", padx=6, pady=2)
+        self.conn_status = tk.Label(main, text="", fg=self.GREEN, bg=self.BG)
+        self.conn_status.grid(row=row, column=2, sticky="w", padx=4)
         row += 1
 
         ttk.Separator(main, orient="horizontal").grid(row=row, column=0, columnspan=3,
@@ -291,17 +320,23 @@ class MainWindow:
             row=row, column=0, columnspan=3, sticky="w", pady=(0, 6))
         row += 1
 
+        from run import is_autostart_enabled, setup_autostart, remove_autostart
+        self._setup_autostart = setup_autostart
+        self._remove_autostart = remove_autostart
+
+        self.win_autostart_var = tk.BooleanVar(value=is_autostart_enabled())
+        chk(main, "Mit Windows starten", self.win_autostart_var,
+            self._on_toggle_win_autostart).grid(row=row, column=0, columnspan=3, sticky="w", pady=2)
+        row += 1
+
+        self.systray_var = tk.BooleanVar(value=registry_read("start_in_systray", "0") == "1")
+        chk(main, "  Direkt in den Systray starten", self.systray_var,
+            self._on_toggle_systray).grid(row=row, column=0, columnspan=3, sticky="w", pady=2)
+        row += 1
+
         self.autostart_var = tk.BooleanVar(value=True)
         chk(main, "Downloads direkt starten", self.autostart_var).grid(
             row=row, column=0, columnspan=3, sticky="w", pady=2)
-        row += 1
-
-        from run import is_autostart_enabled, setup_autostart, remove_autostart
-        self.win_autostart_var = tk.BooleanVar(value=is_autostart_enabled())
-        self._setup_autostart = setup_autostart
-        self._remove_autostart = remove_autostart
-        chk(main, "Mit Windows starten", self.win_autostart_var,
-            self._on_toggle_win_autostart).grid(row=row, column=0, columnspan=3, sticky="w", pady=2)
         row += 1
 
         toast_row = tk.Frame(main, bg=self.BG)
@@ -327,18 +362,14 @@ class MainWindow:
                                                        sticky="ew", pady=8)
         row += 1
 
-        lbl(main, text="Bridge starten / stoppen", font=("Segoe UI", 11, "bold")).grid(
-            row=row, column=0, columnspan=3, sticky="w", pady=(0, 6))
+        self.bridge_toggle_btn = btn(main, "Bridge starten", self._toggle_bridge, width=22)
+        self.bridge_toggle_btn.grid(row=row, column=0, columnspan=2, sticky="w", padx=6, pady=6)
         row += 1
 
-        btn_frame = tk.Frame(main, bg=self.BG)
-        btn_frame.grid(row=row, column=0, columnspan=3, pady=6)
-        self.start_btn = btn(btn_frame, "Bridge starten", self._start_bridge, width=18)
-        self.start_btn.pack(side="left", padx=4)
-        self.stop_btn = btn(btn_frame, "Bridge stoppen", self._stop_bridge, width=18, state="disabled")
-        self.stop_btn.pack(side="left", padx=4)
-
         self._bridge_running = False
+
+    def _on_toggle_systray(self):
+        registry_write("start_in_systray", "1" if self.systray_var.get() else "0")
 
     def _on_creds_changed(self):
         email = self.fields["myjd_email"].get().strip()
@@ -493,12 +524,17 @@ class MainWindow:
                         text=f"Fehler: {err[:40]}", fg="red"))
         threading.Thread(target=check, daemon=True).start()
 
+    def _toggle_bridge(self):
+        if self._bridge_running:
+            self._stop_bridge()
+        else:
+            self._start_bridge()
+
     def _start_bridge(self):
         cfg = self._save_config()
         from main import start_bridge_components
         self._bridge_running = True
-        self.start_btn.config(state="disabled")
-        self.stop_btn.config(state="normal")
+        self.bridge_toggle_btn.config(text="Bridge stoppen")
         self._set_status("Starte...", "orange")
         def run():
             try:
@@ -513,8 +549,7 @@ class MainWindow:
 
     def _stop_bridge(self):
         self._bridge_running = False
-        self.start_btn.config(state="normal")
-        self.stop_btn.config(state="disabled")
+        self.bridge_toggle_btn.config(text="Bridge starten")
         self._set_status("Gestoppt", "gray")
 
     def _on_minimize(self, event=None):
@@ -656,8 +691,10 @@ class MainWindow:
         win.configure(bg="#193D43")
         win.attributes("-topmost", True)
         try:
-            ico = tk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "icon.ico"))
-            win.iconphoto(True, ico)
+            base = os.path.dirname(sys.argv[0]) if getattr(sys, 'frozen', False) else os.path.dirname(__file__)
+            ico = os.path.join(base, "icon.ico")
+            if os.path.exists(ico):
+                win.iconbitmap(ico)
         except Exception:
             pass
 
