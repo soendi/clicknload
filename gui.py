@@ -165,7 +165,7 @@ class MainWindow:
                          activebackground=self.BG4, activeforeground=self.ACCENT,
                          borderwidth=0)
         hilfe.add_command(label="Nach Updates suchen", command=self.check_for_update)
-        hilfe.add_separator(bg=self.BG4)
+        hilfe.add_separator()
         hilfe.add_command(label="\u00dcber", command=self._show_about)
         menubar.add_cascade(label="Hilfe", menu=hilfe)
         self.root.config(menu=menubar)
