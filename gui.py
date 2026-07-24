@@ -14,7 +14,7 @@ import winreg
 
 log = logging.getLogger("cnl")
 
-CURRENT_VERSION = "1.0.20.0"
+CURRENT_VERSION = "1.0.21.0"
 RELEASES_API = "https://api.github.com/repos/soendi/clicknload/releases?per_page=10"
 
 REGISTRY_KEY = r"Software\ClickNLoadBridge"
