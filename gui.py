@@ -431,7 +431,7 @@ class MainWindow:
         self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38)
         self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
         # Dropdown-Listbox (tk.Listbox) Hintergrund setzen
-        self.device_combo.bind("<Button-1>", lambda e: self._fix_combo_dropdown())
+        self.device_combo.bind("<Button-1>", lambda e: self.root.after_idle(self._fix_combo_dropdown))
         row += 1
 
         lbl(main, text="Port").grid(row=row, column=0, sticky="w", pady=3)
