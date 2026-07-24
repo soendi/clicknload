@@ -560,6 +560,49 @@ class MainWindow:
             if current in names:
                 self.device_combo.set(current)
             self.conn_status.config(text=f"{len(names)} Ger\u00e4te verf\u00fcgbar", fg="green")
+        self._refresh_tray_menu()
+
+    def _refresh_tray_menu(self):
+        if not self._tray_pystray:
+            return
+        try:
+            import pystray
+            devices = list(self.device_combo.cget("values") or [])
+            current_device = self.device_combo.get()
+
+            def on_device_selected(icon, item):
+                device_name = str(item)
+                registry_write("myjd_device_name", device_name)
+                self.root.after(0, lambda: self.device_combo.set(device_name))
+
+            menu_items = [
+                pystray.MenuItem(f"ClickNLoad Bridge v{CURRENT_VERSION}", None, enabled=False),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("Fenster anzeigen", lambda: self.root.after(0, self._show_window), default=True),
+                pystray.Menu.SEPARATOR,
+            ]
+
+            if len(devices) > 1:
+                device_menu = pystray.Menu(
+                    *[pystray.MenuItem(d, on_device_selected,
+                                       checked=lambda item, d=d: str(item) == current_device)
+                      for d in devices]
+                )
+                menu_items.append(pystray.MenuItem("Ger\u00e4t", device_menu))
+            elif len(devices) == 1:
+                menu_items.append(pystray.MenuItem(f"Ger\u00e4t: {devices[0]}", None, enabled=False))
+
+            menu_items.extend([
+                pystray.MenuItem("Nach Updates suchen", lambda: self.check_for_update()),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("Beenden", self._on_exit),
+            ])
+
+            menu = pystray.Menu(*menu_items)
+            self._tray_pystray.menu = menu
+            self._tray_pystray.update_menu()
+        except Exception as e:
+            log.warning(f"Tray-Menü Update fehlgeschlagen: {e}")
 
     def _show_about(self):
         messagebox.showinfo("\u00dcber ClickNLoad Bridge",
