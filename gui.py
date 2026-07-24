@@ -217,6 +217,10 @@ class MainWindow:
         s.map("TCombobox", fieldbackground=[("readonly", self.BG3)],
                selectbackground=[("readonly", self.BG3)],
                selectforeground=[("readonly", self.FG)])
+        # Dropdown-Liste (Listbox) stylen
+        s.configure("TCombobox.Listbox", background=self.BG3, foreground=self.FG,
+                     selectbackground=self.BG4, selectforeground=self.FG,
+                     borderwidth=0, highlightthickness=0)
         s.configure("TSpinbox", fieldbackground=self.BG3, background=self.BG3,
                      foreground=self.FG, arrowcolor=self.FG, bordercolor=self.BG3)
         s.configure("TSeparator", background=self.BG4)
