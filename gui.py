@@ -14,7 +14,7 @@ import tempfile
 
 log = logging.getLogger("cnl")
 
-CURRENT_VERSION = "1.0.5.0"
+CURRENT_VERSION = "1.0.13.0"
 VERSION_URL = "https://raw.githubusercontent.com/soendi/clicknload/master/version.json"
 RELEASES_URL = "https://github.com/soendi/clicknload/releases"
 
@@ -291,8 +291,9 @@ class MainWindow:
         self._set_status("Starte...", "orange")
         def run():
             try:
-                start_bridge_components(cfg)
+                server = start_bridge_components(cfg)
                 self.root.after(0, lambda: self._set_status("Aktiv", "green"))
+                server.serve_forever()
             except Exception as e:
                 log.error(f"Bridge-Fehler: {e}")
                 self.root.after(0, lambda: self._set_status(f"Fehler: {e}", "red"))
@@ -382,13 +383,13 @@ class MainWindow:
             self._download_and_install(version)
 
     def _download_and_install(self, version):
-        msi_url = f"https://github.com/soendi/clicknload/releases/download/v{version}/ClickNLoadBridge_Setup.msi"
-        tmp = os.path.join(tempfile.gettempdir(), "ClickNLoadBridge_Setup.msi")
+        exe_url = f"https://github.com/soendi/clicknload/releases/download/v{version}/ClickNLoadBridge_Setup.exe"
+        tmp = os.path.join(tempfile.gettempdir(), "ClickNLoadBridge_Setup.exe")
         log.info(f"Lade Update v{version} herunter...")
         try:
-            urllib.request.urlretrieve(msi_url, tmp)
+            urllib.request.urlretrieve(exe_url, tmp)
             log.info("Download abgeschlossen, starte Installation...")
-            subprocess.Popen(["msiexec", "/i", tmp, "/qn"])
+            subprocess.Popen([tmp, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"])
             self._on_exit()
         except Exception as e:
             log.error(f"Update-Fehler: {e}")

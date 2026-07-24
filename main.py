@@ -102,9 +102,9 @@ def save_config():
 _tray_icon = None
 _tray_pystray = None
 
-CURRENT_VERSION = "1.0.2.0"
+CURRENT_VERSION = "1.0.13.0"
 VERSION_URL = "https://raw.githubusercontent.com/soendi/clicknload/master/version.json"
-MSI_NAME = "ClickNLoadBridge_Setup.msi"
+EXE_NAME = "ClickNLoadBridge_Setup.exe"
 RELEASES_URL = "https://github.com/soendi/clicknload/releases"
 
 try:
@@ -446,12 +446,12 @@ def check_for_update(icon_item=None):
                 decision = show_update_dialog(remote)
                 if decision == "download":
                     import urllib.request, os, tempfile, subprocess
-                    msi_url = f"https://github.com/soendi/clicknload/releases/download/v{remote}/ClickNLoadBridge_Setup.msi"
-                    tmp = os.path.join(tempfile.gettempdir(), "ClickNLoadBridge_Setup.msi")
+                    exe_url = f"https://github.com/soendi/clicknload/releases/download/v{remote}/ClickNLoadBridge_Setup.exe"
+                    tmp = os.path.join(tempfile.gettempdir(), "ClickNLoadBridge_Setup.exe")
                     log.info(f"Lade Update v{remote} herunter...")
-                    urllib.request.urlretrieve(msi_url, tmp)
+                    urllib.request.urlretrieve(exe_url, tmp)
                     log.info("Download abgeschlossen, starte Installation...")
-                    subprocess.Popen(["msiexec", "/i", tmp, "/qn"])
+                    subprocess.Popen([tmp, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"])
             else:
                 log.info(f"Kein Update (aktuell {CURRENT_VERSION})")
                 notify("ClickNLoad Bridge", f"Kein Update verfügbar\nAktuelle Version: {CURRENT_VERSION}", duration=6)
@@ -972,8 +972,13 @@ def _make_icon(bg, arrow):
     ], fill=arrow)
     return img
 
-GREEN_TRAY_ICON = _make_icon("#2ecc71", "#000000")
-RED_TRAY_ICON   = _make_icon("#e74c3c", "#ffffff")
+GREEN_TRAY_ICON = None
+RED_TRAY_ICON = None
+try:
+    GREEN_TRAY_ICON = _make_icon("#2ecc71", "#000000")
+    RED_TRAY_ICON   = _make_icon("#e74c3c", "#ffffff")
+except Exception:
+    pass
 
 def create_tray_icon():
     return GREEN_TRAY_ICON
