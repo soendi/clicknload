@@ -788,6 +788,9 @@ class MainWindow:
                 registry_write("myjd_device_name", device_name)
                 self.root.after(0, lambda: self.device_combo.set(device_name))
 
+            def refresh_devices(icon, item):
+                self.root.after(0, self._refresh_devices_from_tray)
+
             devices = list(self.device_combo.cget("values") or [])
             current_device = self.device_combo.get()
 
@@ -798,15 +801,20 @@ class MainWindow:
                 pystray.Menu.SEPARATOR,
             ]
 
-            if len(devices) > 1:
-                device_menu = pystray.Menu(
-                    *[pystray.MenuItem(d, on_device_selected,
-                                       checked=lambda item, d=d: str(item) == current_device)
-                      for d in devices]
-                )
-                menu_items.append(pystray.MenuItem("Ger\u00e4t", device_menu))
-            elif len(devices) == 1:
-                menu_items.append(pystray.MenuItem(f"Ger\u00e4t: {devices[0]}", None, enabled=False))
+            # Immer Gerät-Submenu anzeigen
+            device_submenu_items = []
+            if devices:
+                for d in devices:
+                    device_submenu_items.append(
+                        pystray.MenuItem(d, on_device_selected,
+                                         checked=lambda item, d=d: str(item) == current_device)
+                    )
+            device_submenu_items.append(pystray.Menu.SEPARATOR)
+            device_submenu_items.append(
+                pystray.MenuItem("Geräte neu laden", refresh_devices)
+            )
+            device_menu = pystray.Menu(*device_submenu_items)
+            menu_items.append(pystray.MenuItem("Ger\u00e4t", device_menu))
 
             menu_items.extend([
                 pystray.MenuItem("Nach Updates suchen", lambda: self.check_for_update()),
@@ -821,6 +829,12 @@ class MainWindow:
             threading.Thread(target=icon.run, daemon=True).start()
         except Exception as e:
             log.warning(f"Systray Fehler: {e}")
+
+    def _refresh_devices_from_tray(self):
+        email = self.fields["myjd_email"].get().strip()
+        pw = self.fields["myjd_password"].get().strip()
+        if email and pw:
+            threading.Thread(target=self._validate_and_fetch_devices, args=(email, pw), daemon=True).start()
 
     def check_for_update(self):
         threading.Thread(target=self._do_update_check, daemon=True).start()
