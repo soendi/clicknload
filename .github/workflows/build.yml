@@ -29,6 +29,22 @@ jobs:
         run: wix build Installer/Product.wxs -o dist/ClickNLoadBridge_Setup.msi -arch x64 -bindpath "dist;."
 
       - name: Create Release
+        shell: pwsh
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "${{ github.ref_name }}" dist/ClickNLoadBridge_Setup.msi --title "${{ github.ref_name }}" --notes "Automatischer Build" --repo soendi/clicknload || gh release upload "${{ github.ref_name }}" dist/ClickNLoadBridge_Setup.msi --clobber --repo soendi/clicknload
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          Write-Host "Creating release for $tag ..."
+          $body = @{tag_name=$tag; name=$tag; body="Automatischer Build"} | ConvertTo-Json -Compress
+          $api = "https://api.github.com/repos/soendi/clicknload/releases"
+          $headers = @{Accept="application/vnd.github+json"; Authorization="Bearer $env:GH_TOKEN"}
+          $rel = curl.exe -s -X POST $api -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $env:GH_TOKEN" -d $body 2>$null
+          $id = ($rel | ConvertFrom-Json).id
+          if (-not $id) {
+            Write-Host "Release existiert bereits – suche ID ..."
+            $rels = curl.exe -s $api -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $env:GH_TOKEN" 2>$null
+            $id = ($rels | ConvertFrom-Json | Where-Object { $_.tag_name -eq $tag } | Select-Object -First 1).id
+          }
+          Write-Host "Release ID: $id"
+          curl.exe -s -X POST "https://uploads.github.com/repos/soendi/clicknload/releases/$id/assets?name=ClickNLoadBridge_Setup.msi" -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $env:GH_TOKEN" -H "Content-Type: application/octet-stream" --data-binary "@dist/ClickNLoadBridge_Setup.msi" 2>$null
+          Write-Host "MSI uploaded"
