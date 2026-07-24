@@ -206,7 +206,8 @@ class MainWindow:
                      padding=[14, 6], font=("Segoe UI", 10))
         s.map("TNotebook.Tab",
                background=[("selected", self.BG)],
-               foreground=[("selected", self.ACCENT)])
+               foreground=[("selected", self.ACCENT)],
+               padding=[("selected", [14, 14])])
 
         s.configure("TFrame", background=self.BG)
         s.configure("TLabel", background=self.BG, foreground=self.FG)
