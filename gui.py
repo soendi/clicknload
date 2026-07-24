@@ -686,6 +686,8 @@ class MainWindow:
             menu_items = [
                 pystray.MenuItem(f"ClickNLoad Bridge v{CURRENT_VERSION}", None, enabled=False),
                 pystray.Menu.SEPARATOR,
+                pystray.MenuItem("Fenster anzeigen", lambda: self.root.after(0, self._show_window), default=True),
+                pystray.Menu.SEPARATOR,
             ]
 
             if len(devices) > 1:
