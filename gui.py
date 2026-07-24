@@ -185,15 +185,15 @@ class MainWindow:
     def _build_menu(self):
         menubar = tk.Menu(self.root, bg=self.BG2, fg=self.FG,
                            activebackground=self.BG4, activeforeground=self.ACCENT,
-                           borderwidth=1, highlightbackground=self.BG2)
+                           borderwidth=1)
         datei = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
                          activebackground=self.BG4, activeforeground=self.ACCENT,
-                         borderwidth=1, highlightbackground=self.BG2)
+                         borderwidth=1)
         datei.add_command(label="Beenden", command=self._on_exit)
         menubar.add_cascade(label="Datei", menu=datei)
         hilfe = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
                          activebackground=self.BG4, activeforeground=self.ACCENT,
-                         borderwidth=1, highlightbackground=self.BG2)
+                         borderwidth=1)
         hilfe.add_command(label="Nach Updates suchen", command=self.check_for_update)
         hilfe.add_separator()
         hilfe.add_command(label="\u00dcber", command=self._show_about)
