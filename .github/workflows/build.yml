@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: windows-latest
@@ -26,10 +29,7 @@ jobs:
         run: choco install innosetup -y --no-progress
 
       - name: Build Setup
-        shell: pwsh
-        run: |
-          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
-          & $iscc Installer\setup.iss
+        run: iscc Installer\setup.iss
 
       - name: Create Release
         shell: pwsh

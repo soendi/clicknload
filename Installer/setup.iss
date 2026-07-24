@@ -16,7 +16,7 @@ DefaultDirName={autopf}\ClickNLoad Bridge
 DefaultGroupName=ClickNLoad Bridge
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
-OutputDir=dist
+OutputDir=..\dist
 OutputBaseFilename=ClickNLoadBridge_Setup
 SetupIconFile=icon.ico
 UninstallDisplayIcon={app}\ClickNLoadBridge.exe
@@ -33,7 +33,7 @@ Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 Name: "desktopicon"; Description: "Desktopverkn&uuml;pfung"; GroupDescription: "Zus&auml;tzliche Symbole:"; Flags: checkedonce
 
 [Files]
-Source: "dist\ClickNLoadBridge.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\dist\ClickNLoadBridge.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\ClickNLoad Bridge"; Filename: "{app}\{#MyAppExeName}"; Parameters: "/start"; WorkingDir: "{app}"
