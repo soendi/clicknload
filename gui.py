@@ -10,6 +10,7 @@ import subprocess
 import urllib.request
 import urllib.error
 import tempfile
+import winreg
 
 log = logging.getLogger("cnl")
 
@@ -17,11 +18,11 @@ CURRENT_VERSION = "1.0.20.0"
 RELEASES_API = "https://api.github.com/repos/soendi/clicknload/releases?per_page=10"
 
 REGISTRY_KEY = r"Software\ClickNLoadBridge"
+AUTOSTART_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 
 
 def registry_read(name, default=""):
     try:
-        import winreg
         key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_KEY, 0, winreg.KEY_READ)
         try:
             val, _ = winreg.QueryValueEx(key, name)
@@ -36,7 +37,6 @@ def registry_read(name, default=""):
 
 def registry_write(name, value):
     try:
-        import winreg
         key = winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, REGISTRY_KEY, 0, winreg.KEY_SET_VALUE)
         winreg.SetValueEx(key, name, 0, winreg.REG_SZ, str(value))
         winreg.CloseKey(key)
@@ -46,10 +46,54 @@ def registry_write(name, value):
 
 def registry_delete_all():
     try:
-        import winreg
         winreg.DeleteKey(winreg.HKEY_CURRENT_USER, REGISTRY_KEY)
     except OSError:
         pass
+
+
+def is_autostart_enabled():
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, AUTOSTART_KEY, 0, winreg.KEY_READ)
+        try:
+            winreg.QueryValueEx(key, "ClickNLoadBridge")
+            return True
+        except FileNotFoundError:
+            return False
+        finally:
+            winreg.CloseKey(key)
+    except OSError:
+        return False
+
+
+def setup_autostart():
+    try:
+        if getattr(sys, 'frozen', False):
+            exe = sys.executable
+        else:
+            exe = os.path.abspath(sys.argv[0])
+        cmd = f'"{exe}" /start'
+        key = winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, AUTOSTART_KEY, 0, winreg.KEY_SET_VALUE)
+        winreg.SetValueEx(key, "ClickNLoadBridge", 0, winreg.REG_SZ, cmd)
+        winreg.CloseKey(key)
+        log.info("Autostart via Registry aktiviert")
+        return True
+    except Exception as e:
+        log.warning(f"Autostart-Registry fehlgeschlagen: {e}")
+        return False
+
+
+def remove_autostart():
+    try:
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, AUTOSTART_KEY, 0, winreg.KEY_SET_VALUE)
+        winreg.DeleteValue(key, "ClickNLoadBridge")
+        winreg.CloseKey(key)
+        log.info("Autostart via Registry entfernt")
+        return True
+    except FileNotFoundError:
+        return True
+    except Exception as e:
+        log.warning(f"Autostart-Registry entfernen fehlgeschlagen: {e}")
+        return False
 
 
 class LogHandler(logging.Handler):
@@ -159,9 +203,9 @@ class MainWindow:
 
         s.configure("TNotebook", background=self.BG, borderwidth=0)
         s.configure("TNotebook.Tab", background=self.BG2, foreground=self.FG,
-                     padding=[18, 8], font=("Segoe UI", 10))
+                     padding=[14, 6], font=("Segoe UI", 10))
         s.map("TNotebook.Tab",
-               background=[("selected", self.BG3)],
+               background=[("selected", self.BG)],
                foreground=[("selected", self.ACCENT)])
 
         s.configure("TFrame", background=self.BG)
@@ -185,20 +229,36 @@ class MainWindow:
     def _build_menu(self):
         menubar = tk.Menu(self.root, bg=self.BG2, fg=self.FG,
                            activebackground=self.BG4, activeforeground=self.ACCENT,
-                           borderwidth=1)
+                           borderwidth=0, relief="flat",
+                           activeborderwidth=0, disabledforeground=self.FG_DIM,
+                           font=("Segoe UI", 10))
         datei = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
                          activebackground=self.BG4, activeforeground=self.ACCENT,
-                         borderwidth=1)
+                         borderwidth=0, relief="flat",
+                         activeborderwidth=0, disabledforeground=self.FG_DIM,
+                         font=("Segoe UI", 10))
         datei.add_command(label="Beenden", command=self._on_exit)
         menubar.add_cascade(label="Datei", menu=datei)
         hilfe = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
                          activebackground=self.BG4, activeforeground=self.ACCENT,
-                         borderwidth=1)
+                         borderwidth=0, relief="flat",
+                         activeborderwidth=0, disabledforeground=self.FG_DIM,
+                         font=("Segoe UI", 10))
         hilfe.add_command(label="Nach Updates suchen", command=self.check_for_update)
         hilfe.add_separator()
         hilfe.add_command(label="\u00dcber", command=self._show_about)
         menubar.add_cascade(label="Hilfe", menu=hilfe)
         self.root.config(menu=menubar)
+        try:
+            import ctypes
+            hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id())
+            hwnd_menu = ctypes.windll.user32.GetMenu(hwnd)
+            if hwnd_menu:
+                MF_BYCOMMAND = 0x00000000
+                RGB = lambda r, g, b: r | (g << 8) | (b << 16)
+                ctypes.windll.user32.SetMenuDefaultItem(hwnd_menu, -1, MF_BYCOMMAND)
+        except Exception:
+            pass
 
     def _build_ui(self):
         self.notebook = ttk.Notebook(self.root)
@@ -306,10 +366,11 @@ class MainWindow:
         self.port_field.grid(row=row, column=1, sticky="w", padx=6, pady=2)
         row += 1
 
-        btn_conn = btn(main, "Verbinden", self._test_connection)
-        btn_conn.grid(row=row, column=1, sticky="w", padx=6, pady=2)
-        self.conn_status = tk.Label(main, text="", fg=self.GREEN, bg=self.BG)
-        self.conn_status.grid(row=row, column=2, sticky="w", padx=4)
+        btn_conn_frame = tk.Frame(main, bg=self.BG)
+        btn_conn_frame.grid(row=row, column=1, sticky="w", padx=6, pady=2)
+        btn(btn_conn_frame, "Verbinden", self._test_connection).pack(side="left")
+        self.conn_status = tk.Label(btn_conn_frame, text="", fg=self.GREEN, bg=self.BG)
+        self.conn_status.pack(side="left", padx=(8, 0))
         row += 1
 
         ttk.Separator(main, orient="horizontal").grid(row=row, column=0, columnspan=3,
@@ -320,18 +381,16 @@ class MainWindow:
             row=row, column=0, columnspan=3, sticky="w", pady=(0, 6))
         row += 1
 
-        from run import is_autostart_enabled, setup_autostart, remove_autostart
-        self._setup_autostart = setup_autostart
-        self._remove_autostart = remove_autostart
-
         self.win_autostart_var = tk.BooleanVar(value=is_autostart_enabled())
         chk(main, "Mit Windows starten", self.win_autostart_var,
             self._on_toggle_win_autostart).grid(row=row, column=0, columnspan=3, sticky="w", pady=2)
         row += 1
 
         self.systray_var = tk.BooleanVar(value=registry_read("start_in_systray", "0") == "1")
-        chk(main, "  Direkt in den Systray starten", self.systray_var,
-            self._on_toggle_systray).grid(row=row, column=0, columnspan=3, sticky="w", pady=2)
+        systray_frame = tk.Frame(main, bg=self.BG)
+        systray_frame.grid(row=row, column=0, columnspan=3, sticky="w", pady=2)
+        chk(systray_frame, "Direkt in den Systray starten", self.systray_var,
+            self._on_toggle_systray).pack(side="left", padx=(24, 0))
         row += 1
 
         self.autostart_var = tk.BooleanVar(value=True)
@@ -382,13 +441,13 @@ class MainWindow:
 
     def _on_toggle_win_autostart(self):
         if self.win_autostart_var.get():
-            ok = self._setup_autostart()
+            ok = setup_autostart()
             if ok:
                 log.info("Mit Windows starten: aktiviert")
             else:
                 log.warning("Autostart konnte nicht eingerichtet werden")
         else:
-            ok = self._remove_autostart()
+            ok = remove_autostart()
             if ok:
                 log.info("Mit Windows starten: deaktiviert")
             else:
