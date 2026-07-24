@@ -23,14 +23,10 @@ jobs:
         run: pyinstaller --onefile --windowed --uac-admin --name "ClickNLoadBridge" --version-file version_info.txt --icon icon.ico --hidden-import myjd --hidden-import main --hidden-import dlc --hidden-import gui --hidden-import pythoncom --hidden-import win32com.client --hidden-import win32com --collect-all pywin32 run.py --distpath dist
 
       - name: Install Inno Setup
-        run: |
-          curl.exe -L -o is.exe "https://jrsoftware.org/download.php/is.exe"
-          .\is.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /ALLUSERS
-          echo "ISCC=C:\Program Files (x86)\Inno Setup 6\ISCC.exe" >> $env:GITHUB_ENV
+        run: choco install innosetup -y --no-progress
 
       - name: Build Setup
-        shell: pwsh
-        run: "& 'C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe' Installer\\setup.iss"
+        run: iscc Installer\setup.iss
 
       - name: Create Release
         shell: pwsh
