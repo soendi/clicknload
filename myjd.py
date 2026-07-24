@@ -1,8 +1,12 @@
 import myjdapi
 import logging
 import time
+import requests
 
 log = logging.getLogger("cnl")
+
+# Globaler Request-Timeout (connect=5s, read=30s)
+requests.adapters.DEFAULT_RETRIES = 3
 
 class MyJDownloader:
     def __init__(self, email, password, device_name):
@@ -11,7 +15,16 @@ class MyJDownloader:
         self.device_name = device_name
         self._api = myjdapi.Myjdapi()
         self._api.set_app_key("clicknload_bridge")
+        # Timeout für alle API-Calls erhöhen
+        if hasattr(self._api, '_session') and isinstance(self._api._session, requests.Session):
+            self._api._session.request = self._request_with_timeout(self._api._session.request)
         self._device = None
+
+    def _request_with_timeout(self, original_request):
+        def wrapper(*args, **kwargs):
+            kwargs.setdefault('timeout', (5, 30))  # connect=5s, read=30s
+            return original_request(*args, **kwargs)
+        return wrapper
 
     def connect(self):
         log.info("Verbinde mit MyJDownloader...")

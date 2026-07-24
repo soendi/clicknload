@@ -227,6 +227,40 @@ class MainWindow:
                      bordercolor=self.BG2, arrowcolor=self.FG)
         s.map("TScrollbar", background=[("active", self.BG3)])
 
+    class _Dropdown:
+        def __init__(self, parent, items, bg, fg, active_bg, active_fg, border_color, font):
+            self.parent = parent
+            self.items = items  # list of (label, command) or (label, None) for separator
+            self.win = tk.Toplevel(parent)
+            self.win.overrideredirect(True)
+            self.win.withdraw()
+            self.win.attributes("-topmost", True)
+
+            outer = tk.Frame(self.win, bg=border_color, padx=1, pady=1)
+            outer.pack()
+            inner = tk.Frame(outer, bg=bg)
+            inner.pack()
+
+            for label, cmd in items:
+                if cmd is None:
+                    sep = tk.Frame(inner, bg=border_color, height=1)
+                    sep.pack(fill="x", padx=6, pady=4)
+                else:
+                    btn = tk.Label(inner, text=label, bg=bg, fg=fg, font=font,
+                                   cursor="hand2", padx=16, pady=5, anchor="w")
+                    btn.pack(fill="x")
+                    btn.bind("<Enter>", lambda e, b=btn: b.config(bg=active_bg, fg=active_fg))
+                    btn.bind("<Leave>", lambda e, b=btn: b.config(bg=bg, fg=fg))
+                    btn.bind("<Button-1>", lambda e, c=cmd: (c(), self.hide()))
+
+        def show(self, x, y):
+            self.win.geometry(f"+{x}+{y}")
+            self.win.deiconify()
+            self.win.focus_force()
+
+        def hide(self):
+            self.win.withdraw()
+
     def _build_menu(self):
         self.menu_bar = tk.Frame(self.root, bg=self.BG2, height=28)
         self.menu_bar.pack(fill="x", side="top")
@@ -237,10 +271,10 @@ class MainWindow:
         datei_lbl = tk.Label(self.menu_bar, text="  Datei  ", bg=self.BG2, fg=self.FG,
                               font=("Segoe UI", 10), cursor="hand2", padx=8, pady=2)
         datei_lbl.pack(side="left")
-        datei_menu = tk.Menu(self.root, tearoff=0, bg=self.BG2, fg=self.FG,
-                              activebackground=self.BG4, activeforeground=self.ACCENT,
-                              borderwidth=-1, relief="flat", font=("Segoe UI", 10))
-        datei_menu.add_command(label="Beenden", command=self._on_exit)
+        datei_menu = self._Dropdown(self.root,
+            items=[("Beenden", self._on_exit)],
+            bg=self.BG2, fg=self.FG, active_bg=self.BG4, active_fg=self.ACCENT,
+            border_color=self.BG4, font=("Segoe UI", 10))
         self._menus["datei"] = (datei_lbl, datei_menu)
         datei_lbl.bind("<Button-1>", lambda e: self._toggle_menu("datei"))
         datei_lbl.bind("<Enter>", lambda e: datei_lbl.config(bg=self.BG4))
@@ -249,12 +283,14 @@ class MainWindow:
         hilfe_lbl = tk.Label(self.menu_bar, text="  Hilfe  ", bg=self.BG2, fg=self.FG,
                               font=("Segoe UI", 10), cursor="hand2", padx=8, pady=2)
         hilfe_lbl.pack(side="left")
-        hilfe_menu = tk.Menu(self.root, tearoff=0, bg=self.BG2, fg=self.FG,
-                              activebackground=self.BG4, activeforeground=self.ACCENT,
-                              borderwidth=-1, relief="flat", font=("Segoe UI", 10))
-        hilfe_menu.add_command(label="Nach Updates suchen", command=self.check_for_update)
-        hilfe_menu.add_separator()
-        hilfe_menu.add_command(label="\u00dcber", command=self._show_about)
+        hilfe_menu = self._Dropdown(self.root,
+            items=[
+                ("Nach Updates suchen", self.check_for_update),
+                (None, None),  # separator
+                ("\u00dcber", self._show_about),
+            ],
+            bg=self.BG2, fg=self.FG, active_bg=self.BG4, active_fg=self.ACCENT,
+            border_color=self.BG4, font=("Segoe UI", 10))
         self._menus["hilfe"] = (hilfe_lbl, hilfe_menu)
         hilfe_lbl.bind("<Button-1>", lambda e: self._toggle_menu("hilfe"))
         hilfe_lbl.bind("<Enter>", lambda e: hilfe_lbl.config(bg=self.BG4))
@@ -273,7 +309,7 @@ class MainWindow:
         y = lbl.winfo_rooty() + lbl.winfo_height()
         self._active_menu = name
         lbl.config(bg=self.BG4)
-        menu.post(x, y)
+        menu.show(x, y)
 
     def _close_menus(self, event=None):
         if event and hasattr(event, "widget"):
@@ -281,10 +317,7 @@ class MainWindow:
                 if event.widget == lbl:
                     return
         for name, (lbl, menu) in self._menus.items():
-            try:
-                menu.grab_release()
-            except Exception:
-                pass
+            menu.hide()
             lbl.config(bg=self.BG2)
         self._active_menu = None
 
