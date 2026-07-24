@@ -234,14 +234,14 @@ class MainWindow:
                            font=("Segoe UI", 10))
         datei = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
                          activebackground=self.BG4, activeforeground=self.ACCENT,
-                         borderwidth=0, relief="flat",
+                         borderwidth=1, relief="flat",
                          activeborderwidth=0, disabledforeground=self.FG_DIM,
                          font=("Segoe UI", 10))
         datei.add_command(label="Beenden", command=self._on_exit)
         menubar.add_cascade(label="Datei", menu=datei)
         hilfe = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
                          activebackground=self.BG4, activeforeground=self.ACCENT,
-                         borderwidth=0, relief="flat",
+                         borderwidth=1, relief="flat",
                          activeborderwidth=0, disabledforeground=self.FG_DIM,
                          font=("Segoe UI", 10))
         hilfe.add_command(label="Nach Updates suchen", command=self.check_for_update)
@@ -249,14 +249,39 @@ class MainWindow:
         hilfe.add_command(label="\u00dcber", command=self._show_about)
         menubar.add_cascade(label="Hilfe", menu=hilfe)
         self.root.config(menu=menubar)
+        self._paint_menu_bar(menubar)
+
+    def _paint_menu_bar(self, menubar):
         try:
             import ctypes
+            from ctypes import wintypes
+
+            class MENUINFO(ctypes.Structure):
+                _fields_ = [
+                    ("cbSize", wintypes.DWORD),
+                    ("fMask", wintypes.UINT),
+                    ("hbrBack", wintypes.HBRUSH),
+                    ("dwContextHelpID", wintypes.DWORD),
+                    ("dwMenuData", ctypes.c_ulong),
+                ]
+
+            MIM_BACKGROUND = 0x00000002
             hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id())
-            hwnd_menu = ctypes.windll.user32.GetMenu(hwnd)
-            if hwnd_menu:
-                MF_BYCOMMAND = 0x00000000
-                RGB = lambda r, g, b: r | (g << 8) | (b << 16)
-                ctypes.windll.user32.SetMenuDefaultItem(hwnd_menu, -1, MF_BYCOMMAND)
+            hmenu = ctypes.windll.user32.GetMenu(hwnd)
+            if not hmenu:
+                return
+
+            r, g, b = 0x19, 0x3D, 0x43
+            color = r | (g << 8) | (b << 16)
+            brush = ctypes.windll.gdi32.CreateSolidBrush(color)
+
+            mi = MENUINFO()
+            mi.cbSize = ctypes.sizeof(MENUINFO)
+            mi.fMask = MIM_BACKGROUND
+            mi.hbrBack = brush
+            ctypes.windll.user32.SetMenuInfo(hmenu, ctypes.byref(mi))
+
+            ctypes.windll.user32.DrawMenuBar(hwnd)
         except Exception:
             pass
 
