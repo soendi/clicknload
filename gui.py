@@ -430,8 +430,8 @@ class MainWindow:
         lbl(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
         self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38)
         self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
-        # Dropdown-Listbox (tk.Listbox) Hintergrund setzen
-        self.device_combo.bind("<Button-1>", lambda e: self.root.after_idle(self._fix_combo_dropdown))
+        # Dropdown-Listbox (tk.Listbox im Toplevel) dunkel färben
+        self.device_combo.bind("<FocusIn>", self._fix_combo_dropdown, add="+")
         row += 1
 
         lbl(main, text="Port").grid(row=row, column=0, sticky="w", pady=3)
