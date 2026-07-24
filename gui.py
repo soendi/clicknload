@@ -1,4 +1,4 @@
-import tkinter as tk
+﻿import tkinter as tk
 from tkinter import ttk, messagebox
 import threading
 import logging
@@ -13,7 +13,7 @@ import tempfile
 
 log = logging.getLogger("cnl")
 
-CURRENT_VERSION = "1.0.16.1"
+CURRENT_VERSION = "1.0.17.0"
 RELEASES_API = "https://api.github.com/repos/soendi/clicknload/releases?per_page=10"
 
 REGISTRY_KEY = r"Software\ClickNLoadBridge"
@@ -103,7 +103,7 @@ class MainWindow:
         hilfe = tk.Menu(menubar, tearoff=0)
         hilfe.add_command(label="Nach Updates suchen", command=self.check_for_update)
         hilfe.add_separator()
-        hilfe.add_command(label="Über", command=self._show_about)
+        hilfe.add_command(label="Ãœber", command=self._show_about)
         menubar.add_cascade(label="Hilfe", menu=hilfe)
         self.root.config(menu=menubar)
 
@@ -175,7 +175,7 @@ class MainWindow:
         self.fields["myjd_email"].bind("<Return>", lambda e: self._on_creds_changed())
         self.fields["myjd_password"].bind("<Return>", lambda e: self._on_creds_changed())
 
-        tk.Label(main, text="Gerät").grid(row=row, column=0, sticky="w", pady=3)
+        tk.Label(main, text="GerÃ¤t").grid(row=row, column=0, sticky="w", pady=3)
         self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38)
         self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
         self.conn_status = tk.Label(main, text="", fg="green")
@@ -256,7 +256,7 @@ class MainWindow:
         pw = self.fields["myjd_password"].get().strip()
         if not email or not pw:
             return
-        self.conn_status.config(text="Prüfe...", fg="orange")
+        self.conn_status.config(text="PrÃ¼fe...", fg="orange")
         self.root.update()
         threading.Thread(target=self._validate_and_fetch_devices, args=(email, pw), daemon=True).start()
 
@@ -301,18 +301,18 @@ class MainWindow:
             self.device_combo.set(names[0])
             self.conn_status.config(text="Verbunden", fg="green")
         elif len(names) == 0:
-            self.conn_status.config(text="Kein Gerät gefunden", fg="red")
+            self.conn_status.config(text="Kein GerÃ¤t gefunden", fg="red")
         else:
             current = self.device_combo.get()
             if current in names:
                 self.device_combo.set(current)
-            self.conn_status.config(text=f"{len(names)} Geräte verfügbar", fg="green")
+            self.conn_status.config(text=f"{len(names)} GerÃ¤te verfÃ¼gbar", fg="green")
 
     def _show_about(self):
-        messagebox.showinfo("Über ClickNLoad Bridge",
+        messagebox.showinfo("Ãœber ClickNLoad Bridge",
                              f"ClickNLoad Bridge v{CURRENT_VERSION}\n\n"
                              "Leitet CNL2/DLC-Links an MyJDownloader weiter.\n\n"
-                             "© Lukas Sonderegger")
+                             "Â© Lukas Sonderegger")
 
     def _load_config(self):
         try:
@@ -369,7 +369,7 @@ class MainWindow:
 
     def _test_connection(self):
         cfg = self._save_config()
-        self.conn_status.config(text="Prüfe...", fg="orange")
+        self.conn_status.config(text="PrÃ¼fe...", fg="orange")
         self.root.update()
         def check():
             try:
@@ -387,10 +387,10 @@ class MainWindow:
                     self.device_combo.configure(values=names)
                     self.device_combo.set(names[0])
                     self.root.after(0, lambda: self.conn_status.config(
-                        text="Gerät gefüllt", fg="green"))
+                        text="GerÃ¤t gefÃ¼llt", fg="green"))
                 else:
                     self.root.after(0, lambda: self.conn_status.config(
-                        text=f"Geräte: {', '.join(names)}", fg="orange"))
+                        text=f"GerÃ¤te: {', '.join(names)}", fg="orange"))
             except Exception as e:
                 err = str(e)
                 if "EMAIL_INVALID" in err:
@@ -486,9 +486,9 @@ class MainWindow:
                                        checked=lambda item, d=d: str(item) == current_device)
                       for d in devices]
                 )
-                menu_items.append(pystray.MenuItem("Gerät", device_menu))
+                menu_items.append(pystray.MenuItem("GerÃ¤t", device_menu))
             elif len(devices) == 1:
-                menu_items.append(pystray.MenuItem(f"Gerät: {devices[0]}", None, enabled=False))
+                menu_items.append(pystray.MenuItem(f"GerÃ¤t: {devices[0]}", None, enabled=False))
 
             menu_items.extend([
                 pystray.MenuItem("Nach Updates suchen", lambda: self.check_for_update()),
@@ -533,20 +533,20 @@ class MainWindow:
                         self.root.after(0, lambda: self._show_update_dialog(remote))
                     else:
                         self.root.after(0, lambda v=remote: messagebox.showinfo(
-                            "Update", f"Neue Version v{v} verfügbar,\n"
+                            "Update", f"Neue Version v{v} verfÃ¼gbar,\n"
                                       f"aber der Build ist noch nicht abgeschlossen.\n"
-                                      f"Bitte später erneut versuchen."))
+                                      f"Bitte spÃ¤ter erneut versuchen."))
                     return
 
             self.root.after(0, lambda: messagebox.showinfo(
-                "Update", f"Kein Update verfügbar (v{CURRENT_VERSION})"))
+                "Update", f"Kein Update verfÃ¼gbar (v{CURRENT_VERSION})"))
         except Exception as e:
             self.root.after(0, lambda: messagebox.showerror(
                 "Update-Fehler", str(e)))
 
     def _show_update_dialog(self, version):
-        result = messagebox.askyesno("Update verfügbar",
-                                      f"Neue Version v{version} verfügbar.\n"
+        result = messagebox.askyesno("Update verfÃ¼gbar",
+                                      f"Neue Version v{version} verfÃ¼gbar.\n"
                                       f"Aktuell: v{CURRENT_VERSION}\n\n"
                                       "Herunterladen und installieren?")
         if result:
