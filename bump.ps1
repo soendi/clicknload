@@ -85,13 +85,11 @@ Write-Utf8NoBom "version_info.txt" $content
 
 Write-Host "Dateien aktualisiert."
 
-# Git — nur committen und pushen, KEIN Tag
-# Der Tag wird erst vom GitHub Actions Workflow erstellt,
-# nachdem der Build erfolgreich abgeschlossen ist.
-# So bietet die App das Update erst an, wenn der Installer fertig ist.
+# Git — committen, pushen und Tag erstellen
 git add version.json gui.py main.py Installer\setup.iss version_info.txt
 git commit -m "v$newVersion"
-git push origin master
+git tag "v$newVersion"
+git push origin master --tags
 
-Write-Host "Push abgeschlossen. Version: v$newVersion"
-Write-Host "GitHub Actions baut den Installer und erstellt den Release..."
+Write-Host "Push abgeschlossen. Tag: v$newVersion"
+Write-Host "GitHub Actions baut jetzt den Installer..."

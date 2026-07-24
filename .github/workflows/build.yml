@@ -2,8 +2,8 @@ name: Build Setup
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - 'v*'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -16,57 +16,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get version
-        id: version
-        shell: pwsh
-        run: |
-          $v = (Get-Content version.json | ConvertFrom-Json).version
-          echo "version=$v" >> $env:GITHUB_OUTPUT
-          echo "tag=v$v" >> $env:GITHUB_OUTPUT
-
-      - name: Check if tag exists
-        id: check
-        shell: pwsh
-        run: |
-          $tag = "${{ steps.version.outputs.tag }}"
-          $exists = git tag -l "$tag"
-          if ($exists) {
-            echo "skip=true" >> $env:GITHUB_OUTPUT
-            Write-Host "Tag $tag existiert bereits — Skip."
-          } else {
-            echo "skip=false" >> $env:GITHUB_OUTPUT
-            Write-Host "Tag $tag neu — Build gestartet."
-          }
-
       - name: Setup Python
-        if: steps.check.outputs.skip != 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.14'
 
       - name: Install dependencies
-        if: steps.check.outputs.skip != 'true'
         run: pip install -r requirements.txt pyinstaller
 
       - name: Build EXE
-        if: steps.check.outputs.skip != 'true'
         run: pyinstaller --onefile --windowed --name "ClickNLoadBridge" --version-file version_info.txt --icon icon.ico --hidden-import myjd --hidden-import main --hidden-import dlc --hidden-import gui --hidden-import pythoncom --hidden-import win32com.client --hidden-import win32com --collect-all pywin32 run.py --distpath dist
 
       - name: Install Inno Setup
-        if: steps.check.outputs.skip != 'true'
         run: choco install innosetup -y --no-progress
 
       - name: Build Setup
-        if: steps.check.outputs.skip != 'true'
         run: iscc Installer\setup.iss
 
-      - name: Create tag and Release
-        if: steps.check.outputs.skip != 'true'
-        shell: pwsh
-        run: |
-          $tag = "${{ steps.version.outputs.tag }}"
-          git tag $tag
-          git push origin $tag
-          gh release create $tag dist/ClickNLoadBridge_Setup.exe --title $tag --notes "Automatischer Build" --repo ${{ github.repository }}
+      - name: Create Release
+        run: gh release create "${{ github.ref_name }}" dist/ClickNLoadBridge_Setup.exe --title "${{ github.ref_name }}" --notes "Automatischer Build" --repo ${{ github.repository }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
