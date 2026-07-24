@@ -239,7 +239,7 @@ class MainWindow:
         datei_lbl.pack(side="left")
         datei_menu = tk.Menu(self.root, tearoff=0, bg=self.BG2, fg=self.FG,
                               activebackground=self.BG4, activeforeground=self.ACCENT,
-                              borderwidth=0, relief="flat", font=("Segoe UI", 10))
+                              borderwidth=-1, relief="flat", font=("Segoe UI", 10))
         datei_menu.add_command(label="Beenden", command=self._on_exit)
         self._menus["datei"] = (datei_lbl, datei_menu)
         datei_lbl.bind("<Button-1>", lambda e: self._toggle_menu("datei"))
@@ -251,7 +251,7 @@ class MainWindow:
         hilfe_lbl.pack(side="left")
         hilfe_menu = tk.Menu(self.root, tearoff=0, bg=self.BG2, fg=self.FG,
                               activebackground=self.BG4, activeforeground=self.ACCENT,
-                              borderwidth=0, relief="flat", font=("Segoe UI", 10))
+                              borderwidth=-1, relief="flat", font=("Segoe UI", 10))
         hilfe_menu.add_command(label="Nach Updates suchen", command=self.check_for_update)
         hilfe_menu.add_separator()
         hilfe_menu.add_command(label="\u00dcber", command=self._show_about)
