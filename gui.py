@@ -1,4 +1,4 @@
-﻿import tkinter as tk
+import tkinter as tk
 from tkinter import ttk, messagebox
 import threading
 import logging
@@ -13,7 +13,7 @@ import tempfile
 
 log = logging.getLogger("cnl")
 
-CURRENT_VERSION = "1.0.17.0"
+CURRENT_VERSION = "1.0.18.0"
 RELEASES_API = "https://api.github.com/repos/soendi/clicknload/releases?per_page=10"
 
 REGISTRY_KEY = r"Software\ClickNLoadBridge"

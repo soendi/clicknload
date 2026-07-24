@@ -1,4 +1,4 @@
-﻿import http.server
+import http.server
 import json
 import base64
 import os
@@ -144,7 +144,7 @@ def save_config():
 _tray_icon = None
 _tray_pystray = None
 
-CURRENT_VERSION = "1.0.17.0"
+CURRENT_VERSION = "1.0.18.0"
 RELEASES_API = "https://api.github.com/repos/soendi/clicknload/releases?per_page=10"
 EXE_NAME = "ClickNLoadBridge_Setup.exe"
 RELEASES_URL = "https://github.com/soendi/clicknload/releases"
