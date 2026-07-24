@@ -1,5 +1,5 @@
 #define MyAppName "ClickNLoad Bridge"
-#define MyAppVersion "1.0.19.0"
+#define MyAppVersion "1.0.20.0"
 #define MyAppPublisher "Lukas Sonderegger"
 #define MyAppURL "https://github.com/soendi/clicknload"
 #define MyAppExeName "ClickNLoadBridge.exe"
@@ -33,7 +33,7 @@ RestartApplications=yes
 Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "DesktopverknÃ¼pfung"; GroupDescription: "ZusÃ¤tzliche Symbole:"; Flags: checkedonce
+Name: "desktopicon"; Description: "DesktopverknÃƒÂ¼pfung"; GroupDescription: "ZusÃƒÂ¤tzliche Symbole:"; Flags: checkedonce
 Name: "autostart"; Description: "Mit Windows starten"; GroupDescription: "Autostart:"
 Name: "systray"; Description: "Direkt in den Systray starten"; GroupDescription: "Autostart:"; Flags: unchecked
 
