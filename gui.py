@@ -4,7 +4,6 @@ import threading
 import logging
 import os
 import sys
-import webbrowser
 import json
 import time
 import subprocess
@@ -18,8 +17,40 @@ CURRENT_VERSION = "1.0.14.0"
 VERSION_URL = "https://raw.githubusercontent.com/soendi/clicknload/master/version.json"
 RELEASES_URL = "https://github.com/soendi/clicknload/releases"
 
-CONFIG_DIR = os.path.join(os.environ.get("APPDATA", "."), "ClickNLoad Bridge")
-CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
+REGISTRY_KEY = r"Software\ClickNLoadBridge"
+
+
+def registry_read(name, default=""):
+    try:
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_KEY, 0, winreg.KEY_READ)
+        try:
+            val, _ = winreg.QueryValueEx(key, name)
+            return val
+        except FileNotFoundError:
+            return default
+        finally:
+            winreg.CloseKey(key)
+    except OSError:
+        return default
+
+
+def registry_write(name, value):
+    try:
+        import winreg
+        key = winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, REGISTRY_KEY, 0, winreg.KEY_SET_VALUE)
+        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, str(value))
+        winreg.CloseKey(key)
+    except Exception as e:
+        log.warning(f"Registry-Schreibfehler ({name}): {e}")
+
+
+def registry_delete_all():
+    try:
+        import winreg
+        winreg.DeleteKey(winreg.HKEY_CURRENT_USER, REGISTRY_KEY)
+    except OSError:
+        pass
 
 
 class LogHandler(logging.Handler):
@@ -67,11 +98,6 @@ class MainWindow:
 
     def _build_menu(self):
         menubar = tk.Menu(self.root)
-        datei = tk.Menu(menubar, tearoff=0)
-        datei.add_command(label="Einstellungen", command=self._show_settings_tab)
-        datei.add_separator()
-        datei.add_command(label="Beenden", command=self._on_exit)
-        menubar.add_cascade(label="Datei", menu=datei)
         hilfe = tk.Menu(menubar, tearoff=0)
         hilfe.add_command(label="Nach Updates suchen", command=self.check_for_update)
         hilfe.add_separator()
@@ -134,25 +160,33 @@ class MainWindow:
         row += 1
 
         self.fields = {}
-        labels = [("myjd_email", "E-Mail"), ("myjd_password", "Passwort"),
-                   ("myjd_device_name", "Gerät"), ("cnl_port", "Port")]
+        labels = [("myjd_email", "E-Mail"), ("myjd_password", "Passwort")]
         for key, label in labels:
             tk.Label(main, text=label).grid(row=row, column=0, sticky="w", pady=3)
-            if key == "myjd_password":
-                e = tk.Entry(main, show="*", width=40)
-            elif key == "cnl_port":
-                e = tk.Entry(main, width=10)
-                tk.Label(main, text="(Name @ Synology)").grid(row=row, column=2, sticky="w", padx=6)
-            else:
-                e = tk.Entry(main, width=40)
+            e = tk.Entry(main, show="*" if key == "myjd_password" else None, width=40)
             e.grid(row=row, column=1, sticky="ew", padx=6)
             self.fields[key] = e
             row += 1
 
-        tk.Button(main, text="Verbinden", command=self._test_connection).grid(
-            row=row, column=1, sticky="w", pady=4)
+        self.fields["myjd_email"].bind("<FocusOut>", lambda e: self._on_creds_changed())
+        self.fields["myjd_password"].bind("<FocusOut>", lambda e: self._on_creds_changed())
+        self.fields["myjd_email"].bind("<Return>", lambda e: self._on_creds_changed())
+        self.fields["myjd_password"].bind("<Return>", lambda e: self._on_creds_changed())
+
+        tk.Label(main, text="Gerät").grid(row=row, column=0, sticky="w", pady=3)
+        self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38)
+        self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
         self.conn_status = tk.Label(main, text="", fg="green")
         self.conn_status.grid(row=row, column=2, sticky="w")
+        row += 1
+
+        tk.Label(main, text="Port").grid(row=row, column=0, sticky="w", pady=3)
+        self.port_field = tk.Entry(main, width=10)
+        self.port_field.grid(row=row, column=1, sticky="w", padx=6)
+        row += 1
+
+        tk.Button(main, text="Verbinden", command=self._test_connection).grid(
+            row=row, column=1, sticky="w", pady=4)
         row += 1
 
         ttk.Separator(main, orient="horizontal").grid(row=row, column=0, columnspan=3,
@@ -169,16 +203,15 @@ class MainWindow:
                                                           sticky="w", pady=2)
         row += 1
 
+        toast_row = tk.Frame(main)
+        toast_row.grid(row=row, column=0, columnspan=3, sticky="w", pady=2)
         self.toast_var = tk.BooleanVar(value=True)
-        tk.Checkbutton(main, text="Toast anzeigen",
-                        variable=self.toast_var).grid(row=row, column=0, columnspan=3,
-                                                      sticky="w", pady=2)
-        row += 1
-
-        tk.Label(main, text="Toast-Dauer (s):").grid(row=row, column=0, sticky="w")
+        tk.Checkbutton(toast_row, text="Toast anzeigen",
+                        variable=self.toast_var).pack(side="left")
+        tk.Label(toast_row, text="Dauer:").pack(side="left", padx=(12, 2))
         self.dur_var = tk.StringVar(value="10")
-        tk.Spinbox(main, from_=1, to=60, textvariable=self.dur_var, width=5).grid(
-            row=row, column=1, sticky="w", padx=6)
+        tk.Spinbox(toast_row, from_=1, to=60, textvariable=self.dur_var, width=4).pack(side="left")
+        tk.Label(toast_row, text="s").pack(side="left")
         row += 1
 
         self.console_start_var = tk.BooleanVar(value=False)
@@ -206,8 +239,48 @@ class MainWindow:
 
         self._bridge_running = False
 
-    def _show_settings_tab(self):
-        self.notebook.select(0)
+    def _on_creds_changed(self):
+        email = self.fields["myjd_email"].get().strip()
+        pw = self.fields["myjd_password"].get().strip()
+        if not email or not pw:
+            return
+        self.conn_status.config(text="Prüfe...", fg="orange")
+        self.root.update()
+        threading.Thread(target=self._validate_and_fetch_devices, args=(email, pw), daemon=True).start()
+
+    def _validate_and_fetch_devices(self, email, pw):
+        try:
+            import myjdapi
+            api = myjdapi.Myjdapi()
+            api.set_app_key("clicknload_bridge")
+            api.connect(email, pw)
+            devices = api.list_devices()
+            names = [d.get("name", "?") for d in (devices or [])]
+            api.disconnect()
+            self.root.after(0, lambda: self._populate_devices(names))
+        except Exception as e:
+            err = str(e)
+            if "EMAIL_INVALID" in err:
+                msg = "E-Mail Adresse nicht korrekt"
+            elif "AUTH_FAILED" in err:
+                msg = "Login fehlgeschlagen"
+            else:
+                msg = err[:50]
+            self.root.after(0, lambda: self.conn_status.config(text=msg, fg="red"))
+            self.root.after(0, lambda: self.device_combo.configure(values=[]))
+
+    def _populate_devices(self, names):
+        self.device_combo.configure(values=names)
+        if len(names) == 1:
+            self.device_combo.set(names[0])
+            self.conn_status.config(text="Verbunden", fg="green")
+        elif len(names) == 0:
+            self.conn_status.config(text="Kein Gerät gefunden", fg="red")
+        else:
+            current = self.device_combo.get()
+            if current in names:
+                self.device_combo.set(current)
+            self.conn_status.config(text=f"{len(names)} Geräte verfügbar", fg="green")
 
     def _show_about(self):
         messagebox.showinfo("Über ClickNLoad Bridge",
@@ -217,32 +290,56 @@ class MainWindow:
 
     def _load_config(self):
         try:
-            with open(CONFIG_PATH, "r") as f:
-                cfg = json.load(f)
-            for key, entry in self.fields.items():
-                val = cfg.get(key, "")
-                entry.delete(0, "end")
-                entry.insert(0, str(val))
-            self.autostart_var.set(cfg.get("autostart_downloads", True))
-            self.toast_var.set(cfg.get("show_toast", True))
-            self.dur_var.set(str(cfg.get("toast_duration", 10)))
-        except Exception:
-            pass
+            email = registry_read("myjd_email")
+            pw = registry_read("myjd_password")
+            device = registry_read("myjd_device_name")
+            port = registry_read("cnl_port", "9666")
+
+            if email:
+                self.fields["myjd_email"].delete(0, "end")
+                self.fields["myjd_email"].insert(0, email)
+            if pw:
+                self.fields["myjd_password"].delete(0, "end")
+                self.fields["myjd_password"].insert(0, pw)
+            if device:
+                self.device_combo.set(device)
+            if port:
+                self.port_field.delete(0, "end")
+                self.port_field.insert(0, port)
+
+            self.autostart_var.set(registry_read("autostart_downloads", "1") == "1")
+            self.toast_var.set(registry_read("show_toast", "1") == "1")
+            self.dur_var.set(registry_read("toast_duration", "10"))
+            self.console_start_var.set(registry_read("show_console", "0") == "1")
+        except Exception as e:
+            log.warning(f"Config-Laden fehlgeschlagen: {e}")
 
     def _save_config(self):
-        cfg = {key: e.get().strip() for key, e in self.fields.items()}
-        cfg["autostart_downloads"] = self.autostart_var.get()
-        cfg["show_toast"] = self.toast_var.get()
-        cfg["show_console"] = self.console_start_var.get()
-        cfg["toast_duration"] = int(self.dur_var.get())
-        cfg["listen_host"] = "127.0.0.1"
-        try:
-            os.makedirs(CONFIG_DIR, exist_ok=True)
-            with open(CONFIG_PATH, "w") as f:
-                json.dump(cfg, f, indent=2)
-        except Exception:
-            pass
-        return cfg
+        email = self.fields["myjd_email"].get().strip()
+        pw = self.fields["myjd_password"].get().strip()
+        device = self.device_combo.get().strip()
+        port = self.port_field.get().strip()
+
+        registry_write("myjd_email", email)
+        registry_write("myjd_password", pw)
+        registry_write("myjd_device_name", device)
+        registry_write("cnl_port", port)
+        registry_write("autostart_downloads", "1" if self.autostart_var.get() else "0")
+        registry_write("show_toast", "1" if self.toast_var.get() else "0")
+        registry_write("show_console", "1" if self.console_start_var.get() else "0")
+        registry_write("toast_duration", self.dur_var.get())
+
+        return {
+            "myjd_email": email,
+            "myjd_password": pw,
+            "myjd_device_name": device,
+            "cnl_port": int(port) if port.isdigit() else 9666,
+            "listen_host": "127.0.0.1",
+            "autostart_downloads": self.autostart_var.get(),
+            "show_toast": self.toast_var.get(),
+            "show_console": self.console_start_var.get(),
+            "toast_duration": int(self.dur_var.get()) if self.dur_var.get().isdigit() else 10,
+        }
 
     def _test_connection(self):
         cfg = self._save_config()
@@ -261,8 +358,8 @@ class MainWindow:
                     self.root.after(0, lambda: self.conn_status.config(
                         text="Verbunden", fg="green"))
                 elif len(names) == 1:
-                    self.fields["myjd_device_name"].delete(0, "end")
-                    self.fields["myjd_device_name"].insert(0, names[0])
+                    self.device_combo.configure(values=names)
+                    self.device_combo.set(names[0])
                     self.root.after(0, lambda: self.conn_status.config(
                         text="Gerät gefüllt", fg="green"))
                 else:
@@ -340,7 +437,7 @@ class MainWindow:
         try:
             import pystray
             from PIL import Image, ImageDraw
-            from main import GREEN_TRAY_ICON, RED_TRAY_ICON
+            from main import GREEN_TRAY_ICON
             icon_img = GREEN_TRAY_ICON if self._bridge_running else \
                 Image.new("RGBA", (64, 64), (100, 100, 100, 255))
             menu = pystray.Menu(

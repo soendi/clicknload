@@ -1,5 +1,5 @@
 ﻿#define MyAppName "ClickNLoad Bridge"
-#define MyAppVersion "1.0.12.0"
+#define MyAppVersion "1.0.14.0"
 #define MyAppPublisher "Lukas Sonderegger"
 #define MyAppURL "https://github.com/soendi/clicknload"
 #define MyAppExeName "ClickNLoadBridge.exe"
@@ -15,22 +15,27 @@ AppUpdatesURL={#MyAppURL}/releases
 DefaultDirName={autopf}\ClickNLoad Bridge
 DefaultGroupName=ClickNLoad Bridge
 DisableProgramGroupPage=yes
-PrivilegesRequired=admin
+PrivilegesRequired=lowest
+PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=..\dist
 OutputBaseFilename=ClickNLoadBridge_Setup
 SetupIconFile=..\icon.ico
 UninstallDisplayIcon={app}\ClickNLoadBridge.exe
-Compression=lzma
+Compression=lzma2
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64compatible
 ChangesAssociations=yes
 UninstallDisplayName=ClickNLoad Bridge
+CloseApplications=force
+RestartApplications=no
 
 [Languages]
 Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "Desktopverknüpfung"; GroupDescription: "Zusätzliche Symbole:"; Flags: checkedonce
+Name: "autostart"; Description: "Mit Windows starten"; GroupDescription: "Autostart:"
+Name: "systray"; Description: "Direkt in den Systray starten"; GroupDescription: "Autostart:"; Flags: disabled
 
 [Files]
 Source: "..\dist\ClickNLoadBridge.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -44,8 +49,10 @@ Name: "{autodesktop}\ClickNLoad Bridge"; Filename: "{app}\{#MyAppExeName}"; Para
 Filename: "{app}\{#MyAppExeName}"; Parameters: "/start"; Description: "ClickNLoad Bridge starten"; Flags: nowait postinstall skipifsilent
 
 [Registry]
+; Uninstall-Eintrag (wird bei Deinstallation automatisch entfernt)
 Root: HKLM; Subkey: "Software\Microsoft\Windows\CurrentVersion\Uninstall\ClickNLoadBridge"; Flags: uninsdeletekey
-Root: HKLM; Subkey: "Software\ClickNLoadBridge"; Flags: uninsdeletekey
+; App-Einstellungen in HKCU (wird bei Deinstallation entfernt, bei Update beibehalten)
+Root: HKCU; Subkey: "Software\ClickNLoadBridge"; Flags: uninsdeletekey
 
 [UninstallRun]
 Filename: "{app}\{#MyAppExeName}"; Parameters: "/uninstall"; Flags: runhidden

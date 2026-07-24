@@ -40,6 +40,30 @@ CONFIG_DIR = os.path.join(os.environ.get("APPDATA", EXE_DIR), "ClickNLoad Bridge
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 STARTUP_DIR = os.path.join(os.environ["APPDATA"], "Microsoft", "Windows", "Start Menu", "Programs")
 STARTUP_LNK = os.path.join(STARTUP_DIR, "ClickNLoad Bridge.lnk")
+REGISTRY_KEY = r"Software\ClickNLoadBridge"
+
+
+def registry_read(name, default=""):
+    try:
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_KEY, 0, winreg.KEY_READ)
+        try:
+            val, _ = winreg.QueryValueEx(key, name)
+            return val
+        except FileNotFoundError:
+            return default
+        finally:
+            winreg.CloseKey(key)
+    except OSError:
+        return default
+
+
+def registry_delete_all():
+    try:
+        import winreg
+        winreg.DeleteKey(winreg.HKEY_CURRENT_USER, REGISTRY_KEY)
+    except OSError:
+        pass
 
 
 def ensure_config_dir():
@@ -47,14 +71,10 @@ def ensure_config_dir():
 
 
 def config_exists():
-    if not os.path.exists(CONFIG_PATH):
-        return False
-    try:
-        with open(CONFIG_PATH) as f:
-            cfg = json.load(f)
-        return all(k in cfg and cfg[k] for k in ("myjd_email", "myjd_password", "myjd_device_name"))
-    except Exception:
-        return False
+    email = registry_read("myjd_email")
+    pw = registry_read("myjd_password")
+    device = registry_read("myjd_device_name")
+    return bool(email and pw and device)
 
 
 def is_installed():
@@ -110,6 +130,10 @@ def handle_uninstall(from_gui=False):
     appdata = os.environ.get("APPDATA", EXE_DIR)
     shutil.rmtree(os.path.join(appdata, "ClickNLoad Bridge"), ignore_errors=True)
     log.info("Konfiguration gelöscht")
+
+    # 3b. Registry-Einträge löschen
+    registry_delete_all()
+    log.info("Registry-Einträge gelöscht")
 
     # 4. Program Files per PowerShell im Hintergrund löschen
     #    (muss ausgelagert werden, da wir die eigene EXE nicht selbst löschen können)
@@ -222,11 +246,12 @@ def setup_startup_shortcut():
 
 def show_setup_wizard(prefill=None):
     if not prefill:
-        try:
-            with open(CONFIG_PATH, encoding="utf-8") as f:
-                prefill = json.load(f)
-        except Exception:
-            pass
+        prefill = {
+            "myjd_email": registry_read("myjd_email"),
+            "myjd_password": registry_read("myjd_password"),
+            "myjd_device_name": registry_read("myjd_device_name", "JDownloader@SYNOLOGY"),
+            "cnl_port": int(registry_read("cnl_port", "9666")),
+        }
 
     import tkinter as tk
     from tkinter import ttk, messagebox
@@ -502,13 +527,12 @@ def show_setup_wizard(prefill=None):
             "toast_color": accent_var.get(),
             "toast_duration": int(dur_var.get()) if dur_var.get().isdigit() else 10
         }
-        ensure_config_dir()
-        with open(CONFIG_PATH, "w") as f:
-            json.dump(config, f, indent=2)
+        for k, v in config.items():
+            registry_write(k, str(v) if not isinstance(v, bool) else ("1" if v else "0"))
 
         if install_var.get() and not is_admin():
-            with open(CONFIG_PATH, "w") as f:
-                json.dump(config, f, indent=2)
+            for k, v in config.items():
+                registry_write(k, str(v) if not isinstance(v, bool) else ("1" if v else "0"))
             root.destroy()
             import ctypes
             ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, "/install", None, 1)
@@ -591,13 +615,6 @@ def main():
             sys.exit(1)
         install()
         setup_autostart()
-        try:
-            with open(CONFIG_PATH, encoding="utf-8") as f:
-                cfg = json.load(f)
-            if cfg.get("startup_shortcut", True):
-                setup_startup_shortcut()
-        except Exception:
-            pass
         from gui import MainWindow
         win = MainWindow()
         win._start_bridge()
@@ -614,17 +631,6 @@ def main():
 
     from gui import MainWindow
     win = MainWindow()
-    if config_exists():
-        with open(CONFIG_PATH, encoding="utf-8") as f:
-            cfg = json.load(f)
-        log.info("Config gefunden")
-        for key, val in cfg.items():
-            if key in win.fields:
-                win.fields[key].delete(0, "end")
-                win.fields[key].insert(0, str(val))
-        win.autostart_var.set(cfg.get("autostart_downloads", True))
-        win.toast_var.set(cfg.get("show_toast", True))
-        win.dur_var.set(str(cfg.get("toast_duration", 10)))
     win.run()
 if __name__ == "__main__":
     main()

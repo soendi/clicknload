@@ -28,6 +28,33 @@ log.setLevel(logging.DEBUG)
 CONFIG_DIR = os.path.join(os.environ.get("APPDATA", os.path.dirname(os.path.abspath(__file__))), "ClickNLoad Bridge")
 CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 
+REGISTRY_KEY = r"Software\ClickNLoadBridge"
+
+
+def registry_read(name, default=""):
+    try:
+        import winreg
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, REGISTRY_KEY, 0, winreg.KEY_READ)
+        try:
+            val, _ = winreg.QueryValueEx(key, name)
+            return val
+        except FileNotFoundError:
+            return default
+        finally:
+            winreg.CloseKey(key)
+    except OSError:
+        return default
+
+
+def registry_write(name, value):
+    try:
+        import winreg
+        key = winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, REGISTRY_KEY, 0, winreg.KEY_SET_VALUE)
+        winreg.SetValueEx(key, name, 0, winreg.REG_SZ, str(value))
+        winreg.CloseKey(key)
+    except Exception:
+        pass
+
 try:
     os.makedirs(CONFIG_DIR, exist_ok=True)
     fh = logging.FileHandler(os.path.join(CONFIG_DIR, "bridge.log"), encoding="utf-8", mode="a")
@@ -53,8 +80,17 @@ except Exception:
     pass
 
 def load_config():
-    with open(CONFIG_PATH, "r") as f:
-        return json.load(f)
+    return {
+        "myjd_email": registry_read("myjd_email"),
+        "myjd_password": registry_read("myjd_password"),
+        "myjd_device_name": registry_read("myjd_device_name"),
+        "cnl_port": int(registry_read("cnl_port", "9666")),
+        "listen_host": "127.0.0.1",
+        "autostart_downloads": registry_read("autostart_downloads", "1") == "1",
+        "show_toast": registry_read("show_toast", "1") == "1",
+        "show_console": registry_read("show_console", "0") == "1",
+        "toast_duration": int(registry_read("toast_duration", "10")),
+    }
 
 config = load_config()
 autostart_downloads = config.get("autostart_downloads", True)
@@ -96,8 +132,14 @@ def toggle_console(show):
 
 
 def save_config():
-    with open(CONFIG_PATH, "w") as f:
-        json.dump(config, f, indent=2)
+    registry_write("myjd_email", config.get("myjd_email", ""))
+    registry_write("myjd_password", config.get("myjd_password", ""))
+    registry_write("myjd_device_name", config.get("myjd_device_name", ""))
+    registry_write("cnl_port", str(config.get("cnl_port", 9666)))
+    registry_write("autostart_downloads", "1" if config.get("autostart_downloads", True) else "0")
+    registry_write("show_toast", "1" if config.get("show_toast", True) else "0")
+    registry_write("show_console", "1" if config.get("show_console", False) else "0")
+    registry_write("toast_duration", str(config.get("toast_duration", 10)))
 
 _tray_icon = None
 _tray_pystray = None
