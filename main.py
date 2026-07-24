@@ -144,8 +144,8 @@ def save_config():
 _tray_icon = None
 _tray_pystray = None
 
-CURRENT_VERSION = "1.0.16.0"
-VERSION_URL = "https://raw.githubusercontent.com/soendi/clicknload/master/version.json"
+CURRENT_VERSION = "1.0.16.1"
+RELEASES_API = "https://api.github.com/repos/soendi/clicknload/releases?per_page=10"
 EXE_NAME = "ClickNLoadBridge_Setup.exe"
 RELEASES_URL = "https://github.com/soendi/clicknload/releases"
 
@@ -477,26 +477,41 @@ def show_offline_choice(pkg_name, offline, total, timeout=10):
 
 
 def check_for_update(icon_item=None):
-    import urllib.request, urllib.error, json
+    import urllib.request, urllib.error, json, os, tempfile, subprocess
     try:
-        req = urllib.request.Request(VERSION_URL, headers={"User-Agent": "ClickNLoadBridge"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode())
-            remote = data.get("version", "")
-            if remote and remote > CURRENT_VERSION:
+        req = urllib.request.Request(RELEASES_API, headers={"User-Agent": "ClickNLoadBridge"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            releases = json.loads(resp.read().decode())
+
+        for rel in releases:
+            if rel.get("draft") or rel.get("prerelease"):
+                continue
+            tag = rel.get("tag_name", "")
+            if not tag.startswith("v"):
+                continue
+            remote = tag[1:]
+            if remote > CURRENT_VERSION:
                 log.info(f"Update verfügbar: {remote} (aktuell {CURRENT_VERSION})")
-                decision = show_update_dialog(remote)
-                if decision == "download":
-                    import urllib.request, os, tempfile, subprocess
-                    exe_url = f"https://github.com/soendi/clicknload/releases/download/v{remote}/ClickNLoadBridge_Setup.exe"
-                    tmp = os.path.join(tempfile.gettempdir(), "ClickNLoadBridge_Setup.exe")
-                    log.info(f"Lade Update v{remote} herunter...")
-                    urllib.request.urlretrieve(exe_url, tmp)
-                    log.info("Download abgeschlossen, starte Installation...")
-                    subprocess.Popen([tmp, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"])
-            else:
-                log.info(f"Kein Update (aktuell {CURRENT_VERSION})")
-                notify("ClickNLoad Bridge", f"Kein Update verfügbar\nAktuelle Version: {CURRENT_VERSION}", duration=6)
+                exe_asset = None
+                for asset in rel.get("assets", []):
+                    if asset["name"].endswith(".exe"):
+                        exe_asset = asset
+                        break
+                if exe_asset:
+                    exe_url = exe_asset["browser_download_url"]
+                    decision = show_update_dialog(remote)
+                    if decision == "download":
+                        tmp = os.path.join(tempfile.gettempdir(), "ClickNLoadBridge_Setup.exe")
+                        log.info(f"Lade Update v{remote} herunter...")
+                        urllib.request.urlretrieve(exe_url, tmp)
+                        log.info("Download abgeschlossen, starte Installation...")
+                        subprocess.Popen([tmp, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"])
+                else:
+                    log.info(f"Update v{remote} gefunden, aber Build noch nicht abgeschlossen")
+                return
+
+        log.info(f"Kein Update (aktuell {CURRENT_VERSION})")
+        notify("ClickNLoad Bridge", f"Kein Update verfügbar\nAktuelle Version: {CURRENT_VERSION}", duration=6)
     except Exception as e:
         log.warning(f"Update-Check fehlgeschlagen: {e}")
         notify("ClickNLoad Bridge", f"Update-Check fehlgeschlagen", duration=6)

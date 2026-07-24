@@ -13,9 +13,8 @@ import tempfile
 
 log = logging.getLogger("cnl")
 
-CURRENT_VERSION = "1.0.16.0"
-VERSION_URL = "https://raw.githubusercontent.com/soendi/clicknload/master/version.json"
-RELEASES_URL = "https://github.com/soendi/clicknload/releases"
+CURRENT_VERSION = "1.0.16.1"
+RELEASES_API = "https://api.github.com/repos/soendi/clicknload/releases?per_page=10"
 
 REGISTRY_KEY = r"Software\ClickNLoadBridge"
 
@@ -456,32 +455,37 @@ class MainWindow:
 
     def _do_update_check(self):
         try:
-            req = urllib.request.Request(VERSION_URL,
+            req = urllib.request.Request(RELEASES_API,
                                           headers={"User-Agent": "ClickNLoadBridge"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read().decode())
-                remote = data.get("version", "")
-                if remote and remote > CURRENT_VERSION:
-                    exe_url = f"https://github.com/soendi/clicknload/releases/download/v{remote}/ClickNLoadBridge_Setup.exe"
-                    try:
-                        check = urllib.request.Request(exe_url, method="HEAD",
-                                                       headers={"User-Agent": "ClickNLoadBridge"})
-                        with urllib.request.urlopen(check, timeout=10) as r:
-                            if r.status == 200:
-                                self.root.after(0, lambda: self._show_update_dialog(remote))
-                            else:
-                                self.root.after(0, lambda: messagebox.showinfo(
-                                    "Update", f"Neue Version v{remote} verfügbar,\n"
-                                              f"aber der Build ist noch nicht abgeschlossen.\n"
-                                              f"Bitte später erneut versuchen."))
-                    except urllib.error.HTTPError:
-                        self.root.after(0, lambda: messagebox.showinfo(
-                            "Update", f"Neue Version v{remote} verfügbar,\n"
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                releases = json.loads(resp.read().decode())
+
+            for rel in releases:
+                if rel.get("draft") or rel.get("prerelease"):
+                    continue
+                tag = rel.get("tag_name", "")
+                if not tag.startswith("v"):
+                    continue
+                remote = tag[1:]
+                if remote > CURRENT_VERSION:
+                    exe_asset = None
+                    for asset in rel.get("assets", []):
+                        if asset["name"].endswith(".exe"):
+                            exe_asset = asset
+                            break
+                    if exe_asset:
+                        self._remote_exe_url = exe_asset["browser_download_url"]
+                        self._remote_version = remote
+                        self.root.after(0, lambda: self._show_update_dialog(remote))
+                    else:
+                        self.root.after(0, lambda v=remote: messagebox.showinfo(
+                            "Update", f"Neue Version v{v} verfügbar,\n"
                                       f"aber der Build ist noch nicht abgeschlossen.\n"
                                       f"Bitte später erneut versuchen."))
-                else:
-                    self.root.after(0, lambda: messagebox.showinfo(
-                        "Update", f"Kein Update verfügbar (v{CURRENT_VERSION})"))
+                    return
+
+            self.root.after(0, lambda: messagebox.showinfo(
+                "Update", f"Kein Update verfügbar (v{CURRENT_VERSION})"))
         except Exception as e:
             self.root.after(0, lambda: messagebox.showerror(
                 "Update-Fehler", str(e)))
@@ -495,7 +499,8 @@ class MainWindow:
             self._download_and_install(version)
 
     def _download_and_install(self, version):
-        exe_url = f"https://github.com/soendi/clicknload/releases/download/v{version}/ClickNLoadBridge_Setup.exe"
+        exe_url = getattr(self, '_remote_exe_url',
+                          f"https://github.com/soendi/clicknload/releases/download/v{version}/ClickNLoadBridge_Setup.exe")
         tmp = os.path.join(tempfile.gettempdir(), "ClickNLoadBridge_Setup.exe")
         log.info(f"Lade Update v{version} herunter...")
         try:
