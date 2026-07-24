@@ -380,7 +380,7 @@ def show_update_dialog(version):
     x = sw - w - 10
     y = sh - taskbar_h - h - 10
     root.geometry(f"{w}x{h}+{x}+{y}")
-    tk.Label(root, text="Neue Version verfÃ¼gbar", bg=bg_color, fg=toast_color,
+    tk.Label(root, text="Neue Version verfügbar", bg=bg_color, fg=toast_color,
              font=("Segoe UI", 12, "bold")).pack(pady=(16, 4), padx=16, anchor="w")
     tk.Label(root, text=f"v{version}    (aktuell v{CURRENT_VERSION})", bg=bg_color, fg=text_color,
              font=("Segoe UI", 10)).pack(pady=(0, 12), padx=16, anchor="w")
@@ -562,7 +562,10 @@ def check_for_update(icon_item=None):
     try:
         req = urllib.request.Request(RELEASES_API, headers={"User-Agent": "ClickNLoadBridge"})
         with urllib.request.urlopen(req, timeout=15) as resp:
-            releases = json.loads(resp.read().decode())
+            data = resp.read()
+            if data[:3] == b'\xef\xbb\xbf':
+                data = data[3:]
+            releases = json.loads(data.decode("utf-8"))
 
         for rel in releases:
             if rel.get("draft") or rel.get("prerelease"):
@@ -572,7 +575,7 @@ def check_for_update(icon_item=None):
                 continue
             remote = tag[1:]
             if remote > CURRENT_VERSION:
-                log.info(f"Update verfÃ¼gbar: {remote} (aktuell {CURRENT_VERSION})")
+                log.info(f"Update verfügbar: {remote} (aktuell {CURRENT_VERSION})")
                 exe_asset = None
                 for asset in rel.get("assets", []):
                     if asset["name"].endswith(".exe"):
@@ -588,7 +591,7 @@ def check_for_update(icon_item=None):
                 return
 
         log.info(f"Kein Update (aktuell {CURRENT_VERSION})")
-        notify("ClickNLoad Bridge", f"Kein Update verfÃ¼gbar\nAktuelle Version: {CURRENT_VERSION}", duration=6)
+        notify("ClickNLoad Bridge", f"Kein Update verfügbar\nAktuelle Version: {CURRENT_VERSION}", duration=6)
     except Exception as e:
         log.warning(f"Update-Check fehlgeschlagen: {e}")
         notify("ClickNLoad Bridge", f"Update-Check fehlgeschlagen", duration=6)
@@ -842,7 +845,7 @@ def handle_form_post(params, raw_body=None):
     passwords = params.get("passwords", [])
     source = params.get("source", [None])[0]
 
-    log.info("1/4 CNL2-Daten empfangen â€“ entschlÃ¼ssele ...")
+    log.info("1/4 CNL2-Daten empfangen \u2013 entschl\u00fcssle ...")
     log.debug(f"handle_form_post: crypted={crypted[:50] if crypted else None!r}, jk={jk_str[:80] if jk_str else None!r}")
 
     if isinstance(passwords, list):
@@ -850,7 +853,7 @@ def handle_form_post(params, raw_body=None):
 
     try:
         if crypted and jk_str:
-            log.info("2/4 CNL2 entschlÃ¼sselt â€“ extrahiere URLs ...")
+            log.info("2/4 CNL2 entschl\u00fcsselt \u2013 extrahiere URLs ...")
             key_str = extract_key_from_js(jk_str)
             log.info(f"Key aus JS: {key_str!r}")
             decrypted = decode_crypted(crypted, key_str)
@@ -967,7 +970,7 @@ class CNLHandler(http.server.BaseHTTPRequestHandler):
                         decision = show_offline_choice(r["name"], r["offline"], r["total"])
                         if decision == "delete":
                             myjd._call(myjd._device.linkgrabber.remove_links, [], [str(r["uuid"])])
-                            log.info(f"Paket gelÃ¶scht: {r['name']}")
+                            log.info(f"Paket gel\u00f6scht: {r['name']}")
                             notify("ClickNLoad Bridge", "Paket gel\u00f6scht",
                                    package_name=r["name"], urls_count=r["offline"], autostart=False, warning=True)
                         elif decision == "show":

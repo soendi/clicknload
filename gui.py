@@ -103,7 +103,7 @@ class MainWindow:
         hilfe = tk.Menu(menubar, tearoff=0)
         hilfe.add_command(label="Nach Updates suchen", command=self.check_for_update)
         hilfe.add_separator()
-        hilfe.add_command(label="Ãœber", command=self._show_about)
+        hilfe.add_command(label="\u00dcber", command=self._show_about)
         menubar.add_cascade(label="Hilfe", menu=hilfe)
         self.root.config(menu=menubar)
 
@@ -175,11 +175,9 @@ class MainWindow:
         self.fields["myjd_email"].bind("<Return>", lambda e: self._on_creds_changed())
         self.fields["myjd_password"].bind("<Return>", lambda e: self._on_creds_changed())
 
-        tk.Label(main, text="GerÃ¤t").grid(row=row, column=0, sticky="w", pady=3)
+        tk.Label(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
         self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38)
         self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
-        self.conn_status = tk.Label(main, text="", fg="green")
-        self.conn_status.grid(row=row, column=2, sticky="w")
         row += 1
 
         tk.Label(main, text="Port").grid(row=row, column=0, sticky="w", pady=3)
@@ -187,8 +185,11 @@ class MainWindow:
         self.port_field.grid(row=row, column=1, sticky="w", padx=6)
         row += 1
 
-        tk.Button(main, text="Verbinden", command=self._test_connection).grid(
-            row=row, column=1, sticky="w", pady=4)
+        btn_frame_conn = tk.Frame(main)
+        btn_frame_conn.grid(row=row, column=1, sticky="w", pady=4)
+        tk.Button(btn_frame_conn, text="Verbinden", command=self._test_connection).pack(side="left")
+        self.conn_status = tk.Label(btn_frame_conn, text="", fg="green")
+        self.conn_status.pack(side="left", padx=(8, 0))
         row += 1
 
         ttk.Separator(main, orient="horizontal").grid(row=row, column=0, columnspan=3,
@@ -256,7 +257,7 @@ class MainWindow:
         pw = self.fields["myjd_password"].get().strip()
         if not email or not pw:
             return
-        self.conn_status.config(text="PrÃ¼fe...", fg="orange")
+        self.conn_status.config(text="Pr\u00fcfe...", fg="orange")
         self.root.update()
         threading.Thread(target=self._validate_and_fetch_devices, args=(email, pw), daemon=True).start()
 
@@ -301,18 +302,18 @@ class MainWindow:
             self.device_combo.set(names[0])
             self.conn_status.config(text="Verbunden", fg="green")
         elif len(names) == 0:
-            self.conn_status.config(text="Kein GerÃ¤t gefunden", fg="red")
+            self.conn_status.config(text="Kein Ger\u00e4t gefunden", fg="red")
         else:
             current = self.device_combo.get()
             if current in names:
                 self.device_combo.set(current)
-            self.conn_status.config(text=f"{len(names)} GerÃ¤te verfÃ¼gbar", fg="green")
+            self.conn_status.config(text=f"{len(names)} Ger\u00e4te verf\u00fcgbar", fg="green")
 
     def _show_about(self):
-        messagebox.showinfo("Ãœber ClickNLoad Bridge",
+        messagebox.showinfo("\u00dcber ClickNLoad Bridge",
                              f"ClickNLoad Bridge v{CURRENT_VERSION}\n\n"
                              "Leitet CNL2/DLC-Links an MyJDownloader weiter.\n\n"
-                             "Â© Lukas Sonderegger")
+                              "\u00a9 Lukas Sonderegger")
 
     def _load_config(self):
         try:
@@ -369,7 +370,7 @@ class MainWindow:
 
     def _test_connection(self):
         cfg = self._save_config()
-        self.conn_status.config(text="PrÃ¼fe...", fg="orange")
+        self.conn_status.config(text="Pr\u00fcfe...", fg="orange")
         self.root.update()
         def check():
             try:
@@ -387,10 +388,10 @@ class MainWindow:
                     self.device_combo.configure(values=names)
                     self.device_combo.set(names[0])
                     self.root.after(0, lambda: self.conn_status.config(
-                        text="GerÃ¤t gefÃ¼llt", fg="green"))
+                        text="Ger\u00e4t gef\u00fcllt", fg="green"))
                 else:
                     self.root.after(0, lambda: self.conn_status.config(
-                        text=f"GerÃ¤te: {', '.join(names)}", fg="orange"))
+                        text=f"Ger\u00e4te: {', '.join(names)}", fg="orange"))
             except Exception as e:
                 err = str(e)
                 if "EMAIL_INVALID" in err:
@@ -486,9 +487,9 @@ class MainWindow:
                                        checked=lambda item, d=d: str(item) == current_device)
                       for d in devices]
                 )
-                menu_items.append(pystray.MenuItem("GerÃ¤t", device_menu))
+                menu_items.append(pystray.MenuItem("Ger\u00e4t", device_menu))
             elif len(devices) == 1:
-                menu_items.append(pystray.MenuItem(f"GerÃ¤t: {devices[0]}", None, enabled=False))
+                menu_items.append(pystray.MenuItem(f"Ger\u00e4t: {devices[0]}", None, enabled=False))
 
             menu_items.extend([
                 pystray.MenuItem("Nach Updates suchen", lambda: self.check_for_update()),
@@ -512,7 +513,10 @@ class MainWindow:
             req = urllib.request.Request(RELEASES_API,
                                           headers={"User-Agent": "ClickNLoadBridge"})
             with urllib.request.urlopen(req, timeout=15) as resp:
-                releases = json.loads(resp.read().decode())
+                data = resp.read()
+                if data[:3] == b'\xef\xbb\xbf':
+                    data = data[3:]
+                releases = json.loads(data.decode("utf-8"))
 
             for rel in releases:
                 if rel.get("draft") or rel.get("prerelease"):
@@ -533,20 +537,20 @@ class MainWindow:
                         self.root.after(0, lambda: self._show_update_dialog(remote))
                     else:
                         self.root.after(0, lambda v=remote: messagebox.showinfo(
-                            "Update", f"Neue Version v{v} verfÃ¼gbar,\n"
+                            "Update", f"Neue Version v{v} verf\u00fcgbar,\n"
                                       f"aber der Build ist noch nicht abgeschlossen.\n"
-                                      f"Bitte spÃ¤ter erneut versuchen."))
+                                      f"Bitte sp\u00e4ter erneut versuchen."))
                     return
 
             self.root.after(0, lambda: messagebox.showinfo(
-                "Update", f"Kein Update verfÃ¼gbar (v{CURRENT_VERSION})"))
+                "Update", f"Kein Update verf\u00fcgbar (v{CURRENT_VERSION})"))
         except Exception as e:
             self.root.after(0, lambda: messagebox.showerror(
                 "Update-Fehler", str(e)))
 
     def _show_update_dialog(self, version):
-        result = messagebox.askyesno("Update verfÃ¼gbar",
-                                      f"Neue Version v{version} verfÃ¼gbar.\n"
+        result = messagebox.askyesno("Update verf\u00fcgbar",
+                                      f"Neue Version v{version} verf\u00fcgbar.\n"
                                       f"Aktuell: v{CURRENT_VERSION}\n\n"
                                       "Herunterladen und installieren?")
         if result:

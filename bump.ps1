@@ -11,6 +11,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# UTF-8 ohne BOM schreiben (PowerShell 5.1 schreibt sonst mit BOM)
+function Write-Utf8NoBom($Path, $Content) {
+    [System.IO.File]::WriteAllText($Path, $Content, [System.Text.UTF8Encoding]::new($false))
+}
+
 # Aktuelle Version aus version.json lesen
 $current = (Get-Content "version.json" | ConvertFrom-Json).version
 Write-Host "Aktuelle Version: $current"
@@ -47,16 +52,22 @@ Write-Host "Neue Version: $newVersion"
 
 # dateien updaten
 # 1. version.json
-@{ version = $newVersion } | ConvertTo-Json | Set-Content "version.json" -Encoding UTF8
+Write-Utf8NoBom "version.json" "{`"version`": `"$newVersion`"}`n"
 
 # 2. gui.py
-(Get-Content "gui.py") -replace 'CURRENT_VERSION = "[^"]*"', "CURRENT_VERSION = `"$newVersion`"" | Set-Content "gui.py" -Encoding UTF8
+$content = Get-Content "gui.py" -Raw
+$content = $content -replace 'CURRENT_VERSION = "[^"]*"', "CURRENT_VERSION = `"$newVersion`""
+Write-Utf8NoBom "gui.py" $content
 
 # 3. main.py
-(Get-Content "main.py") -replace 'CURRENT_VERSION = "[^"]*"', "CURRENT_VERSION = `"$newVersion`"" | Set-Content "main.py" -Encoding UTF8
+$content = Get-Content "main.py" -Raw
+$content = $content -replace 'CURRENT_VERSION = "[^"]*"', "CURRENT_VERSION = `"$newVersion`""
+Write-Utf8NoBom "main.py" $content
 
 # 4. setup.iss
-(Get-Content "Installer\setup.iss") -replace '#define MyAppVersion "[^"]*"', "#define MyAppVersion `"$newVersion`"" | Set-Content "Installer\setup.iss" -Encoding UTF8
+$content = Get-Content "Installer\setup.iss" -Raw
+$content = $content -replace '#define MyAppVersion "[^"]*"', "#define MyAppVersion `"$newVersion`""
+Write-Utf8NoBom "Installer\setup.iss" $content
 
 # 5. version_info.txt
 $content = Get-Content "version_info.txt" -Raw
@@ -65,7 +76,7 @@ $content = $content -replace 'filevers=\([\d, ]+\)', "filevers=($major, $minor, 
 $content = $content -replace 'prodvers=\([\d, ]+\)', "prodvers=($major, $minor, $patch, $build)"
 $content = $content -replace "StringStruct\(u'FileVersion', u'[^']*'\)", "StringStruct(u'FileVersion', u'$versionDot')"
 $content = $content -replace "StringStruct\(u'ProductVersion', u'[^']*'\)", "StringStruct(u'ProductVersion', u'$versionDot')"
-Set-Content "version_info.txt" $content -Encoding UTF8
+Write-Utf8NoBom "version_info.txt" $content
 
 Write-Host "Dateien aktualisiert."
 
