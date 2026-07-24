@@ -430,6 +430,8 @@ class MainWindow:
         lbl(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
         self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38)
         self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
+        # Dropdown-Listbox (tk.Listbox) Hintergrund setzen
+        self.device_combo.bind("<Button-1>", lambda e: self._fix_combo_dropdown())
         row += 1
 
         lbl(main, text="Port").grid(row=row, column=0, sticky="w", pady=3)
@@ -754,6 +756,20 @@ class MainWindow:
             if self._tray_pystray:
                 self._tray_pystray.stop()
                 self._tray_pystray = None
+        except Exception:
+            pass
+
+    def _fix_combo_dropdown(self):
+        try:
+            # ttk.Combobox Dropdown ist ein tk.Listbox (bei clam theme)
+            self.root.update_idletasks()
+            for w in self.root.winfo_children():
+                if w.winfo_class() == "Toplevel":
+                    for c in w.winfo_children():
+                        if c.winfo_class() == "Listbox":
+                            c.configure(bg=self.BG3, fg=self.FG,
+                                         selectbackground=self.BG4, selectforeground=self.FG,
+                                         highlightthickness=0, borderwidth=0)
         except Exception:
             pass
 
