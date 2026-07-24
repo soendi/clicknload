@@ -16,6 +16,11 @@ function Write-Utf8NoBom($Path, $Content) {
     [System.IO.File]::WriteAllText($Path, $Content, [System.Text.UTF8Encoding]::new($false))
 }
 
+# ANSI (Windows-1252) schreiben — fuer Inno Setup .iss Dateien
+function Write-Ansi($Path, $Content) {
+    [System.IO.File]::WriteAllText($Path, $Content, [System.Text.Encoding]::GetEncoding(1252))
+}
+
 # Aktuelle Version aus version.json lesen
 $current = (Get-Content "version.json" | ConvertFrom-Json).version
 Write-Host "Aktuelle Version: $current"
@@ -64,10 +69,10 @@ $content = Get-Content "main.py" -Raw
 $content = $content -replace 'CURRENT_VERSION = "[^"]*"', "CURRENT_VERSION = `"$newVersion`""
 Write-Utf8NoBom "main.py" $content
 
-# 4. setup.iss
+# 4. setup.iss (ANSI encoding fuer Inno Setup)
 $content = Get-Content "Installer\setup.iss" -Raw
 $content = $content -replace '#define MyAppVersion "[^"]*"', "#define MyAppVersion `"$newVersion`""
-Write-Utf8NoBom "Installer\setup.iss" $content
+Write-Ansi "Installer\setup.iss" $content
 
 # 5. version_info.txt
 $content = Get-Content "version_info.txt" -Raw
