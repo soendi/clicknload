@@ -228,63 +228,65 @@ class MainWindow:
         s.map("TScrollbar", background=[("active", self.BG3)])
 
     def _build_menu(self):
-        menubar = tk.Menu(self.root, bg=self.BG2, fg=self.FG,
-                           activebackground=self.BG4, activeforeground=self.ACCENT,
-                           borderwidth=0, relief="flat",
-                           activeborderwidth=0, disabledforeground=self.FG_DIM,
-                           font=("Segoe UI", 10))
-        datei = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
-                         activebackground=self.BG4, activeforeground=self.ACCENT,
-                         borderwidth=1, relief="flat",
-                         activeborderwidth=0, disabledforeground=self.FG_DIM,
-                         font=("Segoe UI", 10))
-        datei.add_command(label="Beenden", command=self._on_exit)
-        menubar.add_cascade(label="Datei", menu=datei)
-        hilfe = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
-                         activebackground=self.BG4, activeforeground=self.ACCENT,
-                         borderwidth=1, relief="flat",
-                         activeborderwidth=0, disabledforeground=self.FG_DIM,
-                         font=("Segoe UI", 10))
-        hilfe.add_command(label="Nach Updates suchen", command=self.check_for_update)
-        hilfe.add_separator()
-        hilfe.add_command(label="\u00dcber", command=self._show_about)
-        menubar.add_cascade(label="Hilfe", menu=hilfe)
-        self.root.config(menu=menubar)
-        self._paint_menu_bar(menubar)
+        self.menu_bar = tk.Frame(self.root, bg=self.BG2, height=28)
+        self.menu_bar.pack(fill="x", side="top")
+        self.menu_bar.pack_propagate(False)
 
-    def _paint_menu_bar(self, menubar):
-        try:
-            import ctypes
-            from ctypes import wintypes
+        self._menus = {}
 
-            class MENUINFO(ctypes.Structure):
-                _fields_ = [
-                    ("cbSize", wintypes.DWORD),
-                    ("fMask", wintypes.UINT),
-                    ("hbrBack", wintypes.HBRUSH),
-                    ("dwContextHelpID", wintypes.DWORD),
-                    ("dwMenuData", ctypes.c_ulong),
-                ]
+        datei_lbl = tk.Label(self.menu_bar, text="  Datei  ", bg=self.BG2, fg=self.FG,
+                              font=("Segoe UI", 10), cursor="hand2", padx=8, pady=2)
+        datei_lbl.pack(side="left")
+        datei_menu = tk.Menu(self.root, tearoff=0, bg=self.BG2, fg=self.FG,
+                              activebackground=self.BG4, activeforeground=self.ACCENT,
+                              borderwidth=1, relief="flat", font=("Segoe UI", 10))
+        datei_menu.add_command(label="Beenden", command=self._on_exit)
+        self._menus["datei"] = (datei_lbl, datei_menu)
+        datei_lbl.bind("<Button-1>", lambda e: self._toggle_menu("datei"))
+        datei_lbl.bind("<Enter>", lambda e: datei_lbl.config(bg=self.BG4))
+        datei_lbl.bind("<Leave>", lambda e: datei_lbl.config(bg=self.BG2))
 
-            MIM_BACKGROUND = 0x00000002
-            hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id())
-            hmenu = ctypes.windll.user32.GetMenu(hwnd)
-            if not hmenu:
-                return
+        hilfe_lbl = tk.Label(self.menu_bar, text="  Hilfe  ", bg=self.BG2, fg=self.FG,
+                              font=("Segoe UI", 10), cursor="hand2", padx=8, pady=2)
+        hilfe_lbl.pack(side="left")
+        hilfe_menu = tk.Menu(self.root, tearoff=0, bg=self.BG2, fg=self.FG,
+                              activebackground=self.BG4, activeforeground=self.ACCENT,
+                              borderwidth=1, relief="flat", font=("Segoe UI", 10))
+        hilfe_menu.add_command(label="Nach Updates suchen", command=self.check_for_update)
+        hilfe_menu.add_separator()
+        hilfe_menu.add_command(label="\u00dcber", command=self._show_about)
+        self._menus["hilfe"] = (hilfe_lbl, hilfe_menu)
+        hilfe_lbl.bind("<Button-1>", lambda e: self._toggle_menu("hilfe"))
+        hilfe_lbl.bind("<Enter>", lambda e: hilfe_lbl.config(bg=self.BG4))
+        hilfe_lbl.bind("<Leave>", lambda e: hilfe_lbl.config(bg=self.BG2))
 
-            r, g, b = 0x19, 0x3D, 0x43
-            color = r | (g << 8) | (b << 16)
-            brush = ctypes.windll.gdi32.CreateSolidBrush(color)
+        self._active_menu = None
+        self.root.bind("<Button-1>", self._close_menus, add="+")
 
-            mi = MENUINFO()
-            mi.cbSize = ctypes.sizeof(MENUINFO)
-            mi.fMask = MIM_BACKGROUND
-            mi.hbrBack = brush
-            ctypes.windll.user32.SetMenuInfo(hmenu, ctypes.byref(mi))
+    def _toggle_menu(self, name):
+        if self._active_menu == name:
+            self._close_menus()
+            return
+        self._close_menus()
+        lbl, menu = self._menus[name]
+        x = lbl.winfo_rootx()
+        y = lbl.winfo_rooty() + lbl.winfo_height()
+        self._active_menu = name
+        lbl.config(bg=self.BG4)
+        menu.post(x, y)
 
-            ctypes.windll.user32.DrawMenuBar(hwnd)
-        except Exception:
-            pass
+    def _close_menus(self, event=None):
+        if event and hasattr(event, "widget"):
+            for name, (lbl, menu) in self._menus.items():
+                if event.widget == lbl:
+                    return
+        for name, (lbl, menu) in self._menus.items():
+            try:
+                menu.grab_release()
+            except Exception:
+                pass
+            lbl.config(bg=self.BG2)
+        self._active_menu = None
 
     def _build_ui(self):
         self.notebook = ttk.Notebook(self.root)
