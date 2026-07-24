@@ -11,6 +11,8 @@ env:
 jobs:
   build:
     runs-on: windows-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -32,21 +34,7 @@ jobs:
         run: iscc Installer\setup.iss
 
       - name: Create Release
-        shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"
-          $api = "https://api.github.com/repos/soendi/clicknload/releases"
-          $body = '{"tag_name":"' + $tag + '","name":"' + $tag + '","body":"Automatischer Build"}'
-          Write-Host "Create release $tag ..."
-          $rel = curl.exe -sS -X POST $api -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $env:GITHUB_TOKEN" -d $body
-          Write-Host "Response: $rel"
-          try { $id = ($rel | ConvertFrom-Json).id } catch { $id = $null }
-          if (-not $id) {
-            Write-Host "Release existiert – suche ID ..."
-            $rels = curl.exe -sS "$api?per_page=10" -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $env:GITHUB_TOKEN"
-            $id = ($rels | ConvertFrom-Json | Where-Object { $_.tag_name -eq $tag } | Select-Object -First 1).id
-          }
-          if (-not $id) { throw "Release ID not found" }
-          Write-Host "Release ID: $id, upload asset ..."
-          curl.exe -sS -X POST "https://uploads.github.com/repos/soendi/clicknload/releases/$id/assets?name=ClickNLoadBridge_Setup.exe" -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $env:GITHUB_TOKEN" -H "Content-Type: application/octet-stream" --data-binary "@dist/ClickNLoadBridge_Setup.exe"
-          Write-Host "Done"
+          gh release create "${{ github.ref_name }}" dist/ClickNLoadBridge_Setup.exe --title "${{ github.ref_name }}" --notes "Automatischer Build" --repo ${{ github.repository }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
