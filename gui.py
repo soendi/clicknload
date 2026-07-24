@@ -70,11 +70,34 @@ class LogHandler(logging.Handler):
 
 
 class MainWindow:
+    BG = "#1e1e1e"
+    BG2 = "#2d2d2d"
+    BG3 = "#3c3c3c"
+    BG4 = "#4c4c4c"
+    FG = "#d4d4d4"
+    FG_DIM = "#888888"
+    ACCENT = "#E6B002"
+    GREEN = "#2ecc71"
+    RED = "#e74c3c"
+
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("ClickNLoad Bridge")
         self.root.geometry("800x600")
         self.root.minsize(700, 500)
+        self.root.configure(bg=self.BG)
+
+        try:
+            import ctypes
+            hwnd = ctypes.windll.user32.GetParent(self.root.winfo_id())
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
+                ctypes.byref(ctypes.c_int(1)), ctypes.sizeof(ctypes.c_int))
+        except Exception:
+            pass
+
+        self._apply_ttk_style()
 
         try:
             ico = tk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "icon.ico"))
@@ -95,14 +118,54 @@ class MainWindow:
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
         self.root.bind("<Unmap>", self._on_minimize)
 
+    def _apply_ttk_style(self):
+        s = ttk.Style()
+        s.theme_use("clam")
+
+        s.configure(".", background=self.BG, foreground=self.FG,
+                     fieldbackground=self.BG3, bordercolor=self.BG3,
+                     troughcolor=self.BG2, selectbackground=self.ACCENT,
+                     selectforeground="#000000", font=("Segoe UI", 10))
+
+        s.configure("TNotebook", background=self.BG, borderwidth=0)
+        s.configure("TNotebook.Tab", background=self.BG2, foreground=self.FG,
+                     padding=[14, 6], font=("Segoe UI", 10))
+        s.map("TNotebook.Tab",
+               background=[("selected", self.BG3)],
+               foreground=[("selected", self.ACCENT)])
+
+        s.configure("TFrame", background=self.BG)
+        s.configure("TLabel", background=self.BG, foreground=self.FG)
+        s.configure("TCombobox", fieldbackground=self.BG3, background=self.BG3,
+                     foreground=self.FG, arrowcolor=self.FG, bordercolor=self.BG3,
+                     lightcolor=self.BG3, darkcolor=self.BG3)
+        s.map("TCombobox", fieldbackground=[("readonly", self.BG3)],
+               selectbackground=[("readonly", self.BG3)],
+               selectforeground=[("readonly", self.FG)])
+        s.configure("TSpinbox", fieldbackground=self.BG3, background=self.BG3,
+                     foreground=self.FG, arrowcolor=self.FG, bordercolor=self.BG3)
+        s.configure("TSeparator", background=self.BG4)
+        s.configure("Horizontal.TProgressbar", troughcolor=self.BG2,
+                     background=self.ACCENT, bordercolor=self.BG2, lightcolor=self.ACCENT,
+                     darkcolor=self.ACCENT)
+        s.configure("TScrollbar", troughcolor=self.BG2, background=self.BG4,
+                     bordercolor=self.BG2, arrowcolor=self.FG)
+        s.map("TScrollbar", background=[("active", self.BG3)])
+
     def _build_menu(self):
-        menubar = tk.Menu(self.root)
-        datei = tk.Menu(menubar, tearoff=0)
+        menubar = tk.Menu(self.root, bg=self.BG2, fg=self.FG,
+                           activebackground=self.BG4, activeforeground=self.ACCENT,
+                           borderwidth=0)
+        datei = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
+                         activebackground=self.BG4, activeforeground=self.ACCENT,
+                         borderwidth=0)
         datei.add_command(label="Beenden", command=self._on_exit)
         menubar.add_cascade(label="Datei", menu=datei)
-        hilfe = tk.Menu(menubar, tearoff=0)
+        hilfe = tk.Menu(menubar, tearoff=0, bg=self.BG2, fg=self.FG,
+                         activebackground=self.BG4, activeforeground=self.ACCENT,
+                         borderwidth=0)
         hilfe.add_command(label="Nach Updates suchen", command=self.check_for_update)
-        hilfe.add_separator()
+        hilfe.add_separator(bg=self.BG4)
         hilfe.add_command(label="\u00dcber", command=self._show_about)
         menubar.add_cascade(label="Hilfe", menu=hilfe)
         self.root.config(menu=menubar)
@@ -111,12 +174,12 @@ class MainWindow:
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True, padx=6, pady=(6, 0))
 
-        self.settings_frame = ttk.Frame(self.notebook, padding=12)
-        self.notebook.add(self.settings_frame, text="Einstellungen")
+        self.settings_frame = tk.Frame(self.notebook, bg=self.BG, padx=12, pady=12)
+        self.notebook.add(self.settings_frame, text="  Einstellungen  ")
         self._build_settings()
 
-        self.console_frame = ttk.Frame(self.notebook, padding=6)
-        self.notebook.add(self.console_frame, text="Konsole")
+        self.console_frame = tk.Frame(self.notebook, bg=self.BG, padx=6, pady=6)
+        self.notebook.add(self.console_frame, text="  Konsole  ")
         self._build_console()
 
     def _build_statusbar(self):
@@ -141,8 +204,13 @@ class MainWindow:
     def _build_console(self):
         self.console_text = tk.Text(self.console_frame, state="disabled",
                                      bg="#1e1e1e", fg="#d4d4d4",
-                                     font=("Consolas", 10), wrap="word")
-        scroll = tk.Scrollbar(self.console_frame, command=self.console_text.yview)
+                                     font=("Consolas", 10), wrap="word",
+                                     insertbackground=self.FG, relief="flat",
+                                     highlightthickness=0, borderwidth=0)
+        scroll = tk.Scrollbar(self.console_frame, command=self.console_text.yview,
+                               bg=self.BG3, troughcolor=self.BG2,
+                               activebackground=self.BG4, highlightthickness=0,
+                               relief="flat", borderwidth=0)
         self.console_text.configure(yscrollcommand=scroll.set)
         self.console_text.pack(side="left", fill="both", expand=True)
         scroll.pack(side="right", fill="y")
@@ -156,17 +224,37 @@ class MainWindow:
         main = self.settings_frame
         main.columnconfigure(1, weight=1)
 
+        def lbl(parent, text, **kw):
+            return tk.Label(parent, text=text, bg=self.BG, fg=self.FG, **kw)
+
+        def btn(parent, text, cmd, **kw):
+            b = tk.Button(parent, text=text, command=cmd, bg=self.BG3, fg=self.FG,
+                          activebackground=self.BG4, activeforeground=self.ACCENT,
+                          relief="flat", borderwidth=0, padx=12, pady=4, **kw)
+            b.bind("<Enter>", lambda e: b.config(bg=self.BG4))
+            b.bind("<Leave>", lambda e: b.config(bg=self.BG3))
+            return b
+
+        def chk(parent, text, var, cmd=None):
+            return tk.Checkbutton(parent, text=text, variable=var, command=cmd,
+                                   bg=self.BG, fg=self.FG, activebackground=self.BG,
+                                   activeforeground=self.ACCENT, selectcolor=self.BG3,
+                                   highlightthickness=0, borderwidth=0)
+
         row = 0
-        tk.Label(main, text="MyJDownloader", font=("Segoe UI", 11, "bold")).grid(
+        lbl(main, text="MyJDownloader", font=("Segoe UI", 11, "bold")).grid(
             row=row, column=0, columnspan=3, sticky="w", pady=(0, 6))
         row += 1
 
         self.fields = {}
         labels = [("myjd_email", "E-Mail"), ("myjd_password", "Passwort")]
         for key, label in labels:
-            tk.Label(main, text=label).grid(row=row, column=0, sticky="w", pady=3)
-            e = tk.Entry(main, show="*" if key == "myjd_password" else None, width=40)
-            e.grid(row=row, column=1, sticky="ew", padx=6)
+            lbl(main, text=label).grid(row=row, column=0, sticky="w", pady=3)
+            e = tk.Entry(main, show="*" if key == "myjd_password" else None, width=40,
+                         bg=self.BG3, fg=self.FG, insertbackground=self.FG,
+                         relief="flat", highlightthickness=1, highlightcolor=self.ACCENT,
+                         highlightbackground=self.BG4)
+            e.grid(row=row, column=1, sticky="ew", padx=6, pady=2)
             self.fields[key] = e
             row += 1
 
@@ -175,20 +263,23 @@ class MainWindow:
         self.fields["myjd_email"].bind("<Return>", lambda e: self._on_creds_changed())
         self.fields["myjd_password"].bind("<Return>", lambda e: self._on_creds_changed())
 
-        tk.Label(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
+        lbl(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
         self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38)
         self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
         row += 1
 
-        tk.Label(main, text="Port").grid(row=row, column=0, sticky="w", pady=3)
-        self.port_field = tk.Entry(main, width=10)
-        self.port_field.grid(row=row, column=1, sticky="w", padx=6)
+        lbl(main, text="Port").grid(row=row, column=0, sticky="w", pady=3)
+        self.port_field = tk.Entry(main, width=10, bg=self.BG3, fg=self.FG,
+                                    insertbackground=self.FG, relief="flat",
+                                    highlightthickness=1, highlightcolor=self.ACCENT,
+                                    highlightbackground=self.BG4)
+        self.port_field.grid(row=row, column=1, sticky="w", padx=6, pady=2)
         row += 1
 
-        btn_frame_conn = tk.Frame(main)
+        btn_frame_conn = tk.Frame(main, bg=self.BG)
         btn_frame_conn.grid(row=row, column=1, sticky="w", pady=4)
-        tk.Button(btn_frame_conn, text="Verbinden", command=self._test_connection).pack(side="left")
-        self.conn_status = tk.Label(btn_frame_conn, text="", fg="green")
+        btn(btn_frame_conn, "Verbinden", self._test_connection).pack(side="left")
+        self.conn_status = tk.Label(btn_frame_conn, text="", fg=self.GREEN, bg=self.BG)
         self.conn_status.pack(side="left", padx=(8, 0))
         row += 1
 
@@ -196,58 +287,55 @@ class MainWindow:
                                                        sticky="ew", pady=8)
         row += 1
 
-        tk.Label(main, text="Optionen", font=("Segoe UI", 11, "bold")).grid(
+        lbl(main, text="Optionen", font=("Segoe UI", 11, "bold")).grid(
             row=row, column=0, columnspan=3, sticky="w", pady=(0, 6))
         row += 1
 
         self.autostart_var = tk.BooleanVar(value=True)
-        tk.Checkbutton(main, text="Downloads direkt starten",
-                        variable=self.autostart_var).grid(row=row, column=0, columnspan=3,
-                                                          sticky="w", pady=2)
+        chk(main, "Downloads direkt starten", self.autostart_var).grid(
+            row=row, column=0, columnspan=3, sticky="w", pady=2)
         row += 1
 
         from run import is_autostart_enabled, setup_autostart, remove_autostart
         self.win_autostart_var = tk.BooleanVar(value=is_autostart_enabled())
         self._setup_autostart = setup_autostart
         self._remove_autostart = remove_autostart
-        tk.Checkbutton(main, text="Mit Windows starten",
-                        variable=self.win_autostart_var,
-                        command=self._on_toggle_win_autostart).grid(
-                            row=row, column=0, columnspan=3, sticky="w", pady=2)
+        chk(main, "Mit Windows starten", self.win_autostart_var,
+            self._on_toggle_win_autostart).grid(row=row, column=0, columnspan=3, sticky="w", pady=2)
         row += 1
 
-        toast_row = tk.Frame(main)
+        toast_row = tk.Frame(main, bg=self.BG)
         toast_row.grid(row=row, column=0, columnspan=3, sticky="w", pady=2)
         self.toast_var = tk.BooleanVar(value=True)
-        tk.Checkbutton(toast_row, text="Toast anzeigen",
-                        variable=self.toast_var).pack(side="left")
-        tk.Label(toast_row, text="Dauer:").pack(side="left", padx=(12, 2))
+        chk(toast_row, "Toast anzeigen", self.toast_var).pack(side="left")
+        lbl(toast_row, text="Dauer:").pack(side="left", padx=(12, 2))
         self.dur_var = tk.StringVar(value="10")
-        tk.Spinbox(toast_row, from_=1, to=60, textvariable=self.dur_var, width=4).pack(side="left")
-        tk.Label(toast_row, text="s").pack(side="left")
+        tk.Spinbox(toast_row, from_=1, to=60, textvariable=self.dur_var, width=4,
+                   bg=self.BG3, fg=self.FG, buttonbackground=self.BG4,
+                   buttonuprelief="flat", buttondownrelief="flat",
+                   relief="flat", highlightthickness=1, highlightcolor=self.ACCENT,
+                   highlightbackground=self.BG4).pack(side="left")
+        lbl(toast_row, text="s").pack(side="left")
         row += 1
 
         self.console_start_var = tk.BooleanVar(value=False)
-        tk.Checkbutton(main, text="Konsole beim Start anzeigen",
-                        variable=self.console_start_var).grid(row=row, column=0, columnspan=3,
-                                                              sticky="w", pady=2)
+        chk(main, "Konsole beim Start anzeigen", self.console_start_var).grid(
+            row=row, column=0, columnspan=3, sticky="w", pady=2)
         row += 1
 
         ttk.Separator(main, orient="horizontal").grid(row=row, column=0, columnspan=3,
                                                        sticky="ew", pady=8)
         row += 1
 
-        tk.Label(main, text="Bridge starten / stoppen", font=("Segoe UI", 11, "bold")).grid(
+        lbl(main, text="Bridge starten / stoppen", font=("Segoe UI", 11, "bold")).grid(
             row=row, column=0, columnspan=3, sticky="w", pady=(0, 6))
         row += 1
 
-        btn_frame = tk.Frame(main)
+        btn_frame = tk.Frame(main, bg=self.BG)
         btn_frame.grid(row=row, column=0, columnspan=3, pady=6)
-        self.start_btn = tk.Button(btn_frame, text="Bridge starten",
-                                    command=self._start_bridge, width=18)
+        self.start_btn = btn(btn_frame, "Bridge starten", self._start_bridge, width=18)
         self.start_btn.pack(side="left", padx=4)
-        self.stop_btn = tk.Button(btn_frame, text="Bridge stoppen",
-                                   command=self._stop_bridge, width=18, state="disabled")
+        self.stop_btn = btn(btn_frame, "Bridge stoppen", self._stop_bridge, width=18, state="disabled")
         self.stop_btn.pack(side="left", padx=4)
 
         self._bridge_running = False
