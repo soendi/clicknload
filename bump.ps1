@@ -61,8 +61,8 @@ Write-Host "Neue Version: $newVersion"
 # 5. version_info.txt
 $content = Get-Content "version_info.txt" -Raw
 $versionDot = "$major.$minor.$patch.$build"
-$content = $content -replace 'filevers=\([\d, ]+\)', "filevers=($major, $minor, $patch, $build),"
-$content = $content -replace 'prodvers=\([\d, ]+\)', "prodvers=($major, $minor, $patch, $build),"
+$content = $content -replace 'filevers=\([\d, ]+\)', "filevers=($major, $minor, $patch, $build)"
+$content = $content -replace 'prodvers=\([\d, ]+\)', "prodvers=($major, $minor, $patch, $build)"
 $content = $content -replace "StringStruct\(u'FileVersion', u'[^']*'\)", "StringStruct(u'FileVersion', u'$versionDot')"
 $content = $content -replace "StringStruct\(u'ProductVersion', u'[^']*'\)", "StringStruct(u'ProductVersion', u'$versionDot')"
 Set-Content "version_info.txt" $content -Encoding UTF8
