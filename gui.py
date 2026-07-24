@@ -430,8 +430,8 @@ class MainWindow:
         lbl(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
         self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38)
         self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
-        # Dropdown-Listbox (tk.Listbox im Toplevel) dunkel fÃƒÂ¤rben
-        self.device_combo.bind("<FocusIn>", self._fix_combo_dropdown, add="+")
+        # Dropdown-Listbox dunkel fÃƒÂ¤rben via postcommand
+        self.device_combo.bind("<Button-1>", self._fix_combo_dropdown, add="+")
         row += 1
 
         lbl(main, text="Port").grid(row=row, column=0, sticky="w", pady=3)
@@ -759,30 +759,26 @@ class MainWindow:
         except Exception:
             pass
 
-    def _fix_combo_dropdown(self):
-        def find_and_color():
+    def _fix_combo_dropdown(self, event=None):
+        def do_color():
             try:
                 # 1. Direktes Popup-Attribut probieren (tk intern)
                 popdown = getattr(self.device_combo, "_popdown", None)
                 if popdown:
-                    lb = getattr(popdown, "f_listbox", None) or \
-                         getattr(popdown, "listbox", None)
+                    lb = getattr(popdown, "f_listbox", None) or getattr(popdown, "listbox", None)
                     if lb and lb.winfo_class() == "Listbox":
                         lb.configure(bg=self.BG3, fg=self.FG,
-                                      selectbackground=self.BG4, selectforeground=self.FG,
-                                      highlightthickness=0, borderwidth=0)
+                                     selectbackground=self.BG4, selectforeground=self.FG,
+                                     highlightthickness=0, borderwidth=0)
                         return
-                # 2. Rekursiv alle Toplevels durchsuchen
-                for w in self.root.winfo_children():
-                    self._color_listboxes_recursive(w)
             except Exception:
                 pass
+            # 2. Fallback: alle Toplevels durchsuchen
+            for w in self.root.winfo_children():
+                self._color_listboxes_recursive(w)
+        self.root.after(1, do_color)
 
-        self.root.after(10, find_and_color)
-        self.root.after(50, find_and_color)
-        self.root.after(100, find_and_color)
-
-    def _show_tray(self):
+def _show_tray(self):
         if self._tray_pystray:
             return
         try:
@@ -810,7 +806,7 @@ class MainWindow:
                 pystray.Menu.SEPARATOR,
             ]
 
-            # Immer GerÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤t-Submenu anzeigen
+            # Gerät-Submenu: aktive mit Haken, inaktive ohne
             device_submenu_items = []
             if devices:
                 for d in devices:
@@ -820,10 +816,10 @@ class MainWindow:
                     )
             device_submenu_items.append(pystray.Menu.SEPARATOR)
             device_submenu_items.append(
-                pystray.MenuItem("GerÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¤te neu laden", refresh_devices)
+                pystray.MenuItem("Geräte neu laden", refresh_devices)
             )
             device_menu = pystray.Menu(*device_submenu_items)
-            menu_items.append(pystray.MenuItem("Ger\u00e4t", device_menu))
+            menu_items.append(pystray.MenuItem("Gerät", device_menu))
 
             menu_items.extend([
                 pystray.MenuItem("Nach Updates suchen", lambda: self.check_for_update()),
