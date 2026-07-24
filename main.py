@@ -144,7 +144,7 @@ def save_config():
 _tray_icon = None
 _tray_pystray = None
 
-CURRENT_VERSION = "1.0.15.0"
+CURRENT_VERSION = "1.0.16.0"
 VERSION_URL = "https://raw.githubusercontent.com/soendi/clicknload/master/version.json"
 EXE_NAME = "ClickNLoadBridge_Setup.exe"
 RELEASES_URL = "https://github.com/soendi/clicknload/releases"
