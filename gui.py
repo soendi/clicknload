@@ -14,7 +14,7 @@ import winreg
 
 log = logging.getLogger("cnl")
 
-CURRENT_VERSION = "1.0.30.0"
+CURRENT_VERSION = "1.0.31.0"
 RELEASES_API = "https://api.github.com/repos/soendi/clicknload/releases?per_page=10"
 
 REGISTRY_KEY = r"Software\ClickNLoadBridge"
@@ -430,7 +430,7 @@ class MainWindow:
         lbl(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
         self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38)
         self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
-        # Dropdown-Listbox (tk.Listbox im Toplevel) dunkel färben
+        # Dropdown-Listbox (tk.Listbox im Toplevel) dunkel fÃ¤rben
         self.device_combo.bind("<FocusIn>", self._fix_combo_dropdown, add="+")
         row += 1
 
@@ -604,7 +604,7 @@ class MainWindow:
             self._tray_pystray.menu = menu
             self._tray_pystray.update_menu()
         except Exception as e:
-            log.warning(f"Tray-MenÃƒÆ’Ã‚Â¼ Update fehlgeschlagen: {e}")
+            log.warning(f"Tray-MenÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¼ Update fehlgeschlagen: {e}")
 
     def _show_about(self):
         messagebox.showinfo("\u00dcber ClickNLoad Bridge",
@@ -811,7 +811,7 @@ class MainWindow:
                 pystray.Menu.SEPARATOR,
             ]
 
-            # Immer GerÃƒÂ¤t-Submenu anzeigen
+            # Immer GerÃƒÆ’Ã‚Â¤t-Submenu anzeigen
             device_submenu_items = []
             if devices:
                 for d in devices:
@@ -821,7 +821,7 @@ class MainWindow:
                     )
             device_submenu_items.append(pystray.Menu.SEPARATOR)
             device_submenu_items.append(
-                pystray.MenuItem("GerÃƒÂ¤te neu laden", refresh_devices)
+                pystray.MenuItem("GerÃƒÆ’Ã‚Â¤te neu laden", refresh_devices)
             )
             device_menu = pystray.Menu(*device_submenu_items)
             menu_items.append(pystray.MenuItem("Ger\u00e4t", device_menu))
