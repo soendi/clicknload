@@ -297,7 +297,16 @@ class MainWindow:
         hilfe_lbl.bind("<Leave>", lambda e: hilfe_lbl.config(bg=self.BG2))
 
         self._active_menu = None
-        self.root.bind("<Button-1>", self._close_menus, add="+")
+        self._last_win_x = self.root.winfo_x()
+        self._last_win_y = self.root.winfo_y()
+        self.root.bind("<Configure>", self._on_window_configure)
+
+    def _on_window_configure(self, event):
+        if event.widget == self.root:
+            x, y = self.root.winfo_x(), self.root.winfo_y()
+            if x != self._last_win_x or y != self._last_win_y:
+                self._close_menus()
+                self._last_win_x, self._last_win_y = x, y
 
     def _toggle_menu(self, name):
         if self._active_menu == name:
