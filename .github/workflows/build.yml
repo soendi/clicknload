@@ -29,7 +29,8 @@ jobs:
           echo "ISCC=C:\Program Files (x86)\Inno Setup 6\ISCC.exe" >> $env:GITHUB_ENV
 
       - name: Build Setup
-        run: "& 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' Installer\setup.iss"
+        shell: pwsh
+        run: "& 'C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe' Installer\\setup.iss"
 
       - name: Create Release
         shell: pwsh
