@@ -301,18 +301,18 @@ class MainWindow:
         self._build_console()
 
     def _build_statusbar(self):
-        self.status_frame = tk.Frame(self.root, bg=self.BG2, height=28)
+        self.status_frame = tk.Frame(self.root, bg=self.BG, height=28)
         self.status_frame.pack(fill="x", side="bottom")
         self.status_frame.pack_propagate(False)
         self.status_dot = tk.Canvas(self.status_frame, width=14, height=14,
-                                     bg=self.BG2, highlightthickness=0)
+                                     bg=self.BG, highlightthickness=0)
         self.status_dot.pack(side="left", padx=(8, 4), pady=6)
         self.dot_id = self.status_dot.create_oval(2, 2, 12, 12, fill="gray", outline="")
         self.status_label = tk.Label(self.status_frame, text="Gestoppt",
-                                      fg=self.FG_DIM, bg=self.BG2, font=("Segoe UI", 9))
+                                      fg=self.FG_DIM, bg=self.BG, font=("Segoe UI", 9))
         self.status_label.pack(side="left", padx=4)
         self.version_label = tk.Label(self.status_frame, text=f"v{CURRENT_VERSION}",
-                                       fg=self.FG_DIM, bg=self.BG2, font=("Segoe UI", 8))
+                                       fg=self.FG_DIM, bg=self.BG, font=("Segoe UI", 8))
         self.version_label.pack(side="right", padx=8)
 
     def _set_status(self, text, color="gray"):
