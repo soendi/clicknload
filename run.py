@@ -574,10 +574,15 @@ def main():
             return
         if sys.argv[1] == "/start":
             if config_exists():
-                start_bridge()
+                from gui import MainWindow
+                win = MainWindow()
+                win._start_bridge()
+                win.run()
             else:
-                log.info("Keine Config – starte Assistent")
-                show_setup_wizard()
+                log.info("Keine Config – starte GUI")
+                from gui import MainWindow
+                win = MainWindow()
+                win.run()
             return
 
     if "/install" in sys.argv:
@@ -593,8 +598,10 @@ def main():
                 setup_startup_shortcut()
         except Exception:
             pass
-        if config_exists():
-            start_bridge()
+        from gui import MainWindow
+        win = MainWindow()
+        win._start_bridge()
+        win.run()
         return
 
     if not is_admin():
@@ -605,15 +612,19 @@ def main():
         )
         sys.exit(0)
 
+    from gui import MainWindow
+    win = MainWindow()
     if config_exists():
         with open(CONFIG_PATH, encoding="utf-8") as f:
             cfg = json.load(f)
-        log.info(f"Config gefunden – öffne Assistent (vorgefüllt)")
-        show_setup_wizard(prefill=cfg)
-    else:
-        log.info("Keine Config – öffne Assistent")
-        show_setup_wizard()
-
-
+        log.info("Config gefunden")
+        for key, val in cfg.items():
+            if key in win.fields:
+                win.fields[key].delete(0, "end")
+                win.fields[key].insert(0, str(val))
+        win.autostart_var.set(cfg.get("autostart_downloads", True))
+        win.toast_var.set(cfg.get("show_toast", True))
+        win.dur_var.set(str(cfg.get("toast_duration", 10)))
+    win.run()
 if __name__ == "__main__":
     main()

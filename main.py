@@ -1111,6 +1111,62 @@ def run_with_systray(server):
     log.info("Bridge beendet")
 
 
+def start_bridge_components(cfg):
+    global autostart_downloads, show_toast, show_console, toast_duration
+    global config, myjd
+    autostart_downloads = cfg.get("autostart_downloads", True)
+    show_toast = cfg.get("show_toast", True)
+    show_console = cfg.get("show_console", False)
+    toast_duration = cfg.get("toast_duration", 10)
+    config = cfg
+
+    log.info("=== ClickNLoad Bridge ===")
+    log.info("Starte ...")
+    log.info(f"Device: {cfg['myjd_device_name']}")
+
+    myjd = MyJDownloader(cfg["myjd_email"], cfg["myjd_password"], cfg["myjd_device_name"])
+    myjd.connect()
+    myjd.list_devices()
+    log.info("MyJDownloader bereit")
+
+    host = cfg.get("listen_host", "127.0.0.1")
+    port = int(cfg.get("cnl_port", 9666))
+    server = ThreadedHTTPServer((host, port), CNLHandler)
+    log.info(f"HTTP-Server laeuft auf {host}:{port}")
+
+    try:
+        port80_server = ThreadedHTTPServer(("127.0.0.1", 80), CNLHandler)
+        threading.Thread(target=port80_server.serve_forever, daemon=True).start()
+        log.info("Zusaetzlicher Listener auf 127.0.0.1:80")
+    except Exception as e:
+        log.debug(f"Port 80 nicht verfuegbar: {e}")
+
+    download_dir = os.path.join(os.environ["USERPROFILE"], "Downloads")
+    def on_dlc_file(content, filename):
+        try:
+            _, pkgs = myjd.add_dlc(content, autostart=autostart_downloads)
+            log.info(f"DLC erfolgreich gesendet: {filename}")
+        except Exception as e:
+            log.error(f"DLC-Fehler: {e}")
+    start_dlc_watcher(download_dir, on_dlc_file)
+
+    def offline_checker():
+        time.sleep(10)
+        while True:
+            try:
+                removed = myjd.remove_offline_packages()
+                for r in removed:
+                    log.info(f"Offline-Paket entfernt: {r['name']} ({r['offline']}/{r['total']})")
+                    notify("ClickNLoad Bridge", "Paket gel\u00f6scht",
+                           package_name=r["name"], urls_count=r["offline"], autostart=False, warning=True)
+            except Exception:
+                pass
+            time.sleep(30)
+    threading.Thread(target=offline_checker, daemon=True, name="offline-checker").start()
+
+    return server
+
+
 def main():
     try:
         import ctypes
@@ -1174,6 +1230,24 @@ def main():
                 log.error(f"DLC-Fehler beim Senden: {e}")
                 notify("ClickNLoad Bridge", f"DLC-Fehler: {e}", duration=8)
         start_dlc_watcher(download_dir, on_dlc_file)
+
+        import time
+
+        def offline_checker():
+            time.sleep(10)
+            while True:
+                try:
+                    removed = myjd.remove_offline_packages()
+                    for r in removed:
+                        log.info(f"Offline-Paket entfernt: {r['name']} ({r['offline']}/{r['total']})")
+                        notify("ClickNLoad Bridge", "Paket gel\u00f6scht",
+                               package_name=r["name"],
+                               urls_count=r["offline"], autostart=False, warning=True)
+                except Exception:
+                    pass
+                time.sleep(30)
+
+        threading.Thread(target=offline_checker, daemon=True, name="offline-checker").start()
 
         if HAS_SYSTRAY:
             log.info("Systray-Icon aktiv")
