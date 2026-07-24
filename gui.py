@@ -462,7 +462,23 @@ class MainWindow:
                 data = json.loads(resp.read().decode())
                 remote = data.get("version", "")
                 if remote and remote > CURRENT_VERSION:
-                    self.root.after(0, lambda: self._show_update_dialog(remote))
+                    exe_url = f"https://github.com/soendi/clicknload/releases/download/v{remote}/ClickNLoadBridge_Setup.exe"
+                    try:
+                        check = urllib.request.Request(exe_url, method="HEAD",
+                                                       headers={"User-Agent": "ClickNLoadBridge"})
+                        with urllib.request.urlopen(check, timeout=10) as r:
+                            if r.status == 200:
+                                self.root.after(0, lambda: self._show_update_dialog(remote))
+                            else:
+                                self.root.after(0, lambda: messagebox.showinfo(
+                                    "Update", f"Neue Version v{remote} verfügbar,\n"
+                                              f"aber der Build ist noch nicht abgeschlossen.\n"
+                                              f"Bitte später erneut versuchen."))
+                    except urllib.error.HTTPError:
+                        self.root.after(0, lambda: messagebox.showinfo(
+                            "Update", f"Neue Version v{remote} verfügbar,\n"
+                                      f"aber der Build ist noch nicht abgeschlossen.\n"
+                                      f"Bitte später erneut versuchen."))
                 else:
                     self.root.after(0, lambda: messagebox.showinfo(
                         "Update", f"Kein Update verfügbar (v{CURRENT_VERSION})"))
