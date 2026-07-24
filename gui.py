@@ -114,12 +114,12 @@ class LogHandler(logging.Handler):
 
 
 class MainWindow:
-    BG = "#1e1e1e"
-    BG2 = "#2d2d2d"
-    BG3 = "#3c3c3c"
-    BG4 = "#4c4c4c"
-    FG = "#d4d4d4"
-    FG_DIM = "#888888"
+    BG = "#193D43"
+    BG2 = "#1e4a52"
+    BG3 = "#245a63"
+    BG4 = "#2d6a73"
+    FG = "#DDF1F6"
+    FG_DIM = "#7a9da5"
     ACCENT = "#E6B002"
     GREEN = "#2ecc71"
     RED = "#e74c3c"
@@ -273,18 +273,18 @@ class MainWindow:
         self._build_console()
 
     def _build_statusbar(self):
-        self.status_frame = tk.Frame(self.root, bg="#2d2d2d", height=28)
+        self.status_frame = tk.Frame(self.root, bg=self.BG2, height=28)
         self.status_frame.pack(fill="x", side="bottom")
         self.status_frame.pack_propagate(False)
         self.status_dot = tk.Canvas(self.status_frame, width=14, height=14,
-                                     bg="#2d2d2d", highlightthickness=0)
+                                     bg=self.BG2, highlightthickness=0)
         self.status_dot.pack(side="left", padx=(8, 4), pady=6)
         self.dot_id = self.status_dot.create_oval(2, 2, 12, 12, fill="gray", outline="")
         self.status_label = tk.Label(self.status_frame, text="Gestoppt",
-                                      fg="#aaaaaa", bg="#2d2d2d", font=("Segoe UI", 9))
+                                      fg=self.FG_DIM, bg=self.BG2, font=("Segoe UI", 9))
         self.status_label.pack(side="left", padx=4)
         self.version_label = tk.Label(self.status_frame, text=f"v{CURRENT_VERSION}",
-                                       fg="#666666", bg="#2d2d2d", font=("Segoe UI", 8))
+                                       fg=self.FG_DIM, bg=self.BG2, font=("Segoe UI", 8))
         self.version_label.pack(side="right", padx=8)
 
     def _set_status(self, text, color="gray"):
@@ -293,7 +293,7 @@ class MainWindow:
 
     def _build_console(self):
         self.console_text = tk.Text(self.console_frame, state="disabled",
-                                     bg="#1e1e1e", fg="#d4d4d4",
+                                     bg=self.BG, fg=self.FG,
                                      font=("Consolas", 10), wrap="word",
                                      insertbackground=self.FG, relief="flat",
                                      highlightthickness=0, borderwidth=0)
