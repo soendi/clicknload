@@ -60,7 +60,6 @@ class MainWindow:
         self._build_menu()
         self._build_ui()
         self._build_statusbar()
-        self._setup_logging()
         self._load_config()
 
         self.root.protocol("WM_DELETE_WINDOW", self._on_close)
