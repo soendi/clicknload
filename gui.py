@@ -442,10 +442,37 @@ class MainWindow:
             from main import GREEN_TRAY_ICON
             icon_img = GREEN_TRAY_ICON if self._bridge_running else \
                 Image.new("RGBA", (64, 64), (100, 100, 100, 255))
-            menu = pystray.Menu(
-                pystray.MenuItem("Fenster öffnen", lambda: self._show_window()),
+
+            def on_device_selected(icon, item):
+                device_name = str(item)
+                registry_write("myjd_device_name", device_name)
+                self.root.after(0, lambda: self.device_combo.set(device_name))
+
+            devices = list(self.device_combo.cget("values") or [])
+            current_device = self.device_combo.get()
+
+            menu_items = [
+                pystray.MenuItem(f"ClickNLoad Bridge v{CURRENT_VERSION}", None, enabled=False),
+                pystray.Menu.SEPARATOR,
+            ]
+
+            if len(devices) > 1:
+                device_menu = pystray.Menu(
+                    *[pystray.MenuItem(d, on_device_selected,
+                                       checked=lambda item, d=d: str(item) == current_device)
+                      for d in devices]
+                )
+                menu_items.append(pystray.MenuItem("Gerät", device_menu))
+            elif len(devices) == 1:
+                menu_items.append(pystray.MenuItem(f"Gerät: {devices[0]}", None, enabled=False))
+
+            menu_items.extend([
+                pystray.MenuItem("Nach Updates suchen", lambda: self.check_for_update()),
+                pystray.Menu.SEPARATOR,
                 pystray.MenuItem("Beenden", self._on_exit),
-            )
+            ])
+
+            menu = pystray.Menu(*menu_items)
             icon = pystray.Icon("clicknload_bridge", icon_img,
                                 "ClickNLoad Bridge", menu)
             self._tray_pystray = icon
