@@ -205,6 +205,16 @@ class MainWindow:
                                                           sticky="w", pady=2)
         row += 1
 
+        from run import is_autostart_enabled, setup_autostart, remove_autostart
+        self.win_autostart_var = tk.BooleanVar(value=is_autostart_enabled())
+        self._setup_autostart = setup_autostart
+        self._remove_autostart = remove_autostart
+        tk.Checkbutton(main, text="Mit Windows starten",
+                        variable=self.win_autostart_var,
+                        command=self._on_toggle_win_autostart).grid(
+                            row=row, column=0, columnspan=3, sticky="w", pady=2)
+        row += 1
+
         toast_row = tk.Frame(main)
         toast_row.grid(row=row, column=0, columnspan=3, sticky="w", pady=2)
         self.toast_var = tk.BooleanVar(value=True)
@@ -249,6 +259,20 @@ class MainWindow:
         self.conn_status.config(text="Prüfe...", fg="orange")
         self.root.update()
         threading.Thread(target=self._validate_and_fetch_devices, args=(email, pw), daemon=True).start()
+
+    def _on_toggle_win_autostart(self):
+        if self.win_autostart_var.get():
+            ok = self._setup_autostart()
+            if ok:
+                log.info("Mit Windows starten: aktiviert")
+            else:
+                log.warning("Autostart konnte nicht eingerichtet werden")
+        else:
+            ok = self._remove_autostart()
+            if ok:
+                log.info("Mit Windows starten: deaktiviert")
+            else:
+                log.warning("Autostart konnte nicht entfernt werden")
 
     def _validate_and_fetch_devices(self, email, pw):
         try:

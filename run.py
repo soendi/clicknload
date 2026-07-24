@@ -222,6 +222,31 @@ def setup_autostart():
         return False
 
 
+def remove_autostart():
+    task_name = APP_NAME
+    script = f"Unregister-ScheduledTask -TaskName '{task_name}' -Confirm:$false -ErrorAction SilentlyContinue"
+    try:
+        subprocess.run(["powershell", "-NoProfile", "-Command", script],
+                       capture_output=True, timeout=10, check=True)
+        log.info(f"Autostart-Aufgabe entfernt: {task_name}")
+        return True
+    except Exception as e:
+        log.warning(f"Autostart entfernen fehlgeschlagen: {e}")
+        return False
+
+
+def is_autostart_enabled():
+    task_name = APP_NAME
+    script = f"Get-ScheduledTask -TaskName '{task_name}' -ErrorAction SilentlyContinue | Select-Object -ExpandProperty State"
+    try:
+        result = subprocess.run(["powershell", "-NoProfile", "-Command", script],
+                                capture_output=True, timeout=10, text=True)
+        state = result.stdout.strip()
+        return state in ("Ready", "Running", "Queued")
+    except Exception:
+        return False
+
+
 def setup_startup_shortcut():
     installed_exe = os.path.join(INSTALL_DIR, "ClickNLoadBridge.exe")
     target = installed_exe if os.path.exists(installed_exe) else EXE_PATH
