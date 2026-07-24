@@ -760,16 +760,26 @@ class MainWindow:
             pass
 
     def _fix_combo_dropdown(self):
+        def find_and_color():
+            try:
+                for w in self.root.winfo_children():
+                    self._color_listboxes_recursive(w)
+            except Exception:
+                pass
+
+        # Fokus ist da, aber Dropdown braucht evtl. ein paar ms
+        self.root.after(10, find_and_color)
+        self.root.after(50, find_and_color)
+        self.root.after(100, find_and_color)
+
+    def _color_listboxes_recursive(self, widget):
         try:
-            # ttk.Combobox Dropdown ist ein tk.Listbox (bei clam theme)
-            self.root.update_idletasks()
-            for w in self.root.winfo_children():
-                if w.winfo_class() == "Toplevel":
-                    for c in w.winfo_children():
-                        if c.winfo_class() == "Listbox":
-                            c.configure(bg=self.BG3, fg=self.FG,
-                                         selectbackground=self.BG4, selectforeground=self.FG,
-                                         highlightthickness=0, borderwidth=0)
+            if widget.winfo_class() == "Listbox":
+                widget.configure(bg=self.BG3, fg=self.FG,
+                                  selectbackground=self.BG4, selectforeground=self.FG,
+                                  highlightthickness=0, borderwidth=0)
+            for child in widget.winfo_children():
+                self._color_listboxes_recursive(child)
         except Exception:
             pass
 
