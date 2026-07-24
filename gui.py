@@ -97,6 +97,9 @@ class MainWindow:
 
     def _build_menu(self):
         menubar = tk.Menu(self.root)
+        datei = tk.Menu(menubar, tearoff=0)
+        datei.add_command(label="Beenden", command=self._on_exit)
+        menubar.add_cascade(label="Datei", menu=datei)
         hilfe = tk.Menu(menubar, tearoff=0)
         hilfe.add_command(label="Nach Updates suchen", command=self.check_for_update)
         hilfe.add_separator()
@@ -502,15 +505,67 @@ class MainWindow:
         exe_url = getattr(self, '_remote_exe_url',
                           f"https://github.com/soendi/clicknload/releases/download/v{version}/ClickNLoadBridge_Setup.exe")
         tmp = os.path.join(tempfile.gettempdir(), "ClickNLoadBridge_Setup.exe")
-        log.info(f"Lade Update v{version} herunter...")
+
+        win = tk.Toplevel(self.root)
+        win.title("Update")
+        win.geometry("420x150")
+        win.resizable(False, False)
+        win.configure(bg="#193D43")
+        win.attributes("-topmost", True)
         try:
-            urllib.request.urlretrieve(exe_url, tmp)
-            log.info("Download abgeschlossen, starte Installation...")
-            subprocess.Popen([tmp, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"])
-            self._on_exit()
-        except Exception as e:
-            log.error(f"Update-Fehler: {e}")
-            messagebox.showerror("Fehler", f"Download fehlgeschlagen:\n{e}")
+            ico = tk.PhotoImage(file=os.path.join(os.path.dirname(__file__), "icon.ico"))
+            win.iconphoto(True, ico)
+        except Exception:
+            pass
+
+        tk.Label(win, text=f"Update v{version} wird heruntergeladen...",
+                 bg="#193D43", fg="#DDF1F6", font=("Segoe UI", 11, "bold")).pack(pady=(18, 8), padx=16, anchor="w")
+        tk.Label(win, text="Bitte warten...", bg="#193D43", fg="#aaaaaa",
+                 font=("Segoe UI", 9)).pack(padx=16, anchor="w")
+
+        progress = ttk.Progressbar(win, length=380, mode="determinate")
+        progress.pack(padx=16, pady=(4, 0))
+        status_label = tk.Label(win, text="0 %", bg="#193D43", fg="#E6B002",
+                                 font=("Segoe UI", 9))
+        status_label.pack(padx=16, anchor="w")
+
+        def do_download():
+            try:
+                req = urllib.request.Request(exe_url, headers={"User-Agent": "ClickNLoadBridge"})
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    total = int(resp.headers.get("Content-Length", 0))
+                    downloaded = 0
+                    chunk_size = 256 * 1024
+                    with open(tmp, "wb") as f:
+                        while True:
+                            chunk = resp.read(chunk_size)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+                            downloaded += len(chunk)
+                            if total > 0:
+                                pct = int(downloaded * 100 / total)
+                                self.root.after(0, lambda p=pct: (
+                                    progress.configure(value=p),
+                                    status_label.config(text=f"{p}%  ({downloaded // 1024} KB / {total // 1024} KB)")
+                                ))
+                            else:
+                                self.root.after(0, lambda d=downloaded: (
+                                    status_label.config(text=f"{d // 1024} KB heruntergeladen")
+                                ))
+                self.root.after(0, lambda: self._launch_installer(tmp, version))
+            except Exception as e:
+                self.root.after(0, lambda: (
+                    win.destroy(),
+                    messagebox.showerror("Fehler", f"Download fehlgeschlagen:\n{e}")
+                ))
+
+        threading.Thread(target=do_download, daemon=True).start()
+
+    def _launch_installer(self, path, version):
+        log.info(f"Starte Installation v{version}...")
+        subprocess.Popen([path, "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS"])
+        self.root.after(1000, self._on_exit)
 
     def run(self):
         self.root.mainloop()

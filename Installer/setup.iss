@@ -27,7 +27,7 @@ ArchitecturesInstallIn64BitMode=x64compatible
 ChangesAssociations=yes
 UninstallDisplayName=ClickNLoad Bridge
 CloseApplications=force
-RestartApplications=no
+RestartApplications=yes
 
 [Languages]
 Name: "german"; MessagesFile: "compiler:Languages\German.isl"
@@ -46,7 +46,8 @@ Name: "{group}\{cm:UninstallProgram,ClickNLoad Bridge}"; Filename: "{uninstallex
 Name: "{autodesktop}\ClickNLoad Bridge"; Filename: "{app}\{#MyAppExeName}"; Parameters: "/start"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#MyAppExeName}"; Parameters: "/start"; Description: "ClickNLoad Bridge starten"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#MyAppExeName}"; Parameters: "/start"; Description: "ClickNLoad Bridge starten"; Flags: nowait postinstall skipifnotsilent
+Filename: "{app}\{#MyAppExeName}"; Parameters: "/start"; Description: ""; Flags: nowait postinstall skipifsilent
 
 [Registry]
 ; Uninstall-Eintrag (wird bei Deinstallation automatisch entfernt)

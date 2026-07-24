@@ -476,6 +476,87 @@ def show_offline_choice(pkg_name, offline, total, timeout=10):
     return result or "delete"
 
 
+def show_download_progress(version, url):
+    import tkinter as tk
+    import threading, urllib.request, os, tempfile, subprocess
+    win = tk.Tk()
+    win.title("Update")
+    win.overrideredirect(True)
+    win.attributes("-topmost", True)
+    win.configure(bg=bg_color)
+    sw = win.winfo_screenwidth()
+    sh = win.winfo_screenheight()
+    try:
+        import ctypes
+        rect = ctypes.wintypes.RECT()
+        ctypes.windll.user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(rect), 0)
+        taskbar_h = sh - rect.bottom
+    except Exception:
+        taskbar_h = 40
+    w, h = 420, 150
+    x = sw - w - 10
+    y = sh - taskbar_h - h - 10
+    win.geometry(f"{w}x{h}+{x}+{y}")
+
+    tk.Label(win, text=f"Update v{version} wird heruntergeladen...",
+             bg=bg_color, fg=toast_color, font=("Segoe UI", 11, "bold")).pack(pady=(18, 8), padx=16, anchor="w")
+    tk.Label(win, text="Bitte warten...", bg=bg_color, fg=text_color,
+             font=("Segoe UI", 9)).pack(padx=16, anchor="w")
+
+    progress = tk.Canvas(win, height=18, bg="#0d252a", highlightthickness=0)
+    progress.pack(padx=16, pady=(4, 0), fill="x")
+    status_label = tk.Label(win, text="0 %", bg=bg_color, fg=toast_color,
+                             font=("Segoe UI", 9))
+    status_label.pack(padx=16, anchor="w")
+
+    def do_download():
+        tmp = os.path.join(tempfile.gettempdir(), "ClickNLoadBridge_Setup.exe")
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "ClickNLoadBridge"})
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                total = int(resp.headers.get("Content-Length", 0))
+                downloaded = 0
+                chunk_size = 256 * 1024
+                with open(tmp, "wb") as f:
+                    while True:
+                        chunk = resp.read(chunk_size)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        downloaded += len(chunk)
+                        if total > 0:
+                            pct = downloaded * 100 // total
+                            bar_w = max(1, int(400 * downloaded / total))
+                            win.after(0, lambda p=pct, bw=bar_w: (
+                                progress.delete("all"),
+                                progress.create_rectangle(0, 0, bw, 18, fill=toast_color, outline=""),
+                                status_label.config(text=f"{p}%  ({downloaded // 1024} KB / {total // 1024} KB)")
+                            ))
+                        else:
+                            win.after(0, lambda d=downloaded: (
+                                status_label.config(text=f"{d // 1024} KB heruntergeladen")
+                            ))
+            log.info(f"Download abgeschlossen, starte Installation v{version}...")
+            win.after(0, lambda: (
+                status_label.config(text="Starte Installation..."),
+                progress.delete("all"),
+                progress.create_rectangle(0, 0, 400, 18, fill=toast_color, outline=""),
+            ))
+            win.after(500, lambda: (
+                subprocess.Popen([tmp, "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS"]),
+                win.after(1000, lambda: os._exit(0))
+            ))
+        except Exception as e:
+            log.warning(f"Update-Download fehlgeschlagen: {e}")
+            win.after(0, lambda: (
+                status_label.config(text=f"Fehler: {e}", fg="#e74c3c")
+            ))
+            win.after(3000, win.destroy)
+
+    threading.Thread(target=do_download, daemon=True).start()
+    win.mainloop()
+
+
 def check_for_update(icon_item=None):
     import urllib.request, urllib.error, json, os, tempfile, subprocess
     try:
@@ -501,11 +582,7 @@ def check_for_update(icon_item=None):
                     exe_url = exe_asset["browser_download_url"]
                     decision = show_update_dialog(remote)
                     if decision == "download":
-                        tmp = os.path.join(tempfile.gettempdir(), "ClickNLoadBridge_Setup.exe")
-                        log.info(f"Lade Update v{remote} herunter...")
-                        urllib.request.urlretrieve(exe_url, tmp)
-                        log.info("Download abgeschlossen, starte Installation...")
-                        subprocess.Popen([tmp, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"])
+                        show_download_progress(remote, exe_url)
                 else:
                     log.info(f"Update v{remote} gefunden, aber Build noch nicht abgeschlossen")
                 return
