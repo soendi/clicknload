@@ -1,5 +1,5 @@
-#define MyAppName "ClickNLoad Bridge"
-#define MyAppVersion "1.0.9.0"
+﻿#define MyAppName "ClickNLoad Bridge"
+#define MyAppVersion "1.0.10.0"
 #define MyAppPublisher "Lukas Sonderegger"
 #define MyAppURL "https://github.com/soendi/clicknload"
 #define MyAppExeName "ClickNLoadBridge.exe"
@@ -30,7 +30,7 @@ UninstallDisplayName=ClickNLoad Bridge
 Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "Desktopverkn&uuml;pfung"; GroupDescription: "Zus&auml;tzliche Symbole:"; Flags: checkedonce
+Name: "desktopicon"; Description: "Desktopverknüpfung"; GroupDescription: "Zusätzliche Symbole:"; Flags: checkedonce
 
 [Files]
 Source: "..\dist\ClickNLoadBridge.exe"; DestDir: "{app}"; Flags: ignoreversion
