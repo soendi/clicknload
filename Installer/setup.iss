@@ -1,5 +1,5 @@
 ﻿#define MyAppName "ClickNLoad Bridge"
-#define MyAppVersion "1.0.14.0"
+#define MyAppVersion "1.0.15.0"
 #define MyAppPublisher "Lukas Sonderegger"
 #define MyAppURL "https://github.com/soendi/clicknload"
 #define MyAppExeName "ClickNLoadBridge.exe"
