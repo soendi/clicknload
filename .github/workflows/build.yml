@@ -1,4 +1,4 @@
-name: Build MSI
+name: Build Setup
 
 on:
   push:
@@ -22,11 +22,14 @@ jobs:
       - name: Build EXE
         run: pyinstaller --onefile --windowed --uac-admin --name "ClickNLoadBridge" --version-file version_info.txt --icon icon.ico --hidden-import myjd --hidden-import main --hidden-import dlc --hidden-import gui --hidden-import pythoncom --hidden-import win32com.client --hidden-import win32com --collect-all pywin32 run.py --distpath dist
 
-      - name: Install WiX
-        run: dotnet tool install --global wix --version 4.0.5 2>$null
+      - name: Install Inno Setup
+        run: |
+          curl.exe -L -o is.exe "https://jrsoftware.org/download.php/is.exe"
+          .\is.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /ALLUSERS
+          echo "ISCC=C:\Program Files (x86)\Inno Setup 6\ISCC.exe" >> $env:GITHUB_ENV
 
-      - name: Build MSI
-        run: wix build Installer/Product.wxs -o dist/ClickNLoadBridge_Setup.msi -arch x64 -bindpath "dist;."
+      - name: Build Setup
+        run: "& 'C:\Program Files (x86)\Inno Setup 6\ISCC.exe' Installer\setup.iss"
 
       - name: Create Release
         shell: pwsh
@@ -45,5 +48,5 @@ jobs:
             $id = ($rels | ConvertFrom-Json | Where-Object { $_.tag_name -eq $tag } | Select-Object -First 1).id
           }
           Write-Host "Release ID: $id"
-          curl.exe -s -X POST "https://uploads.github.com/repos/soendi/clicknload/releases/$id/assets?name=ClickNLoadBridge_Setup.msi" -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $env:GH_TOKEN" -H "Content-Type: application/octet-stream" --data-binary "@dist/ClickNLoadBridge_Setup.msi"
-          Write-Host "MSI uploaded"
+          curl.exe -s -X POST "https://uploads.github.com/repos/soendi/clicknload/releases/$id/assets?name=ClickNLoadBridge_Setup.exe" -H "Accept: application/vnd.github+json" -H "Authorization: Bearer $env:GH_TOKEN" -H "Content-Type: application/octet-stream" --data-binary "@dist/ClickNLoadBridge_Setup.exe"
+          Write-Host "Setup uploaded"
