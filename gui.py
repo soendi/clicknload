@@ -111,7 +111,8 @@ class MainWindow:
         self.status_dot.itemconfig(self.dot_id, fill=color)
         self.status_label.config(text=text)
 
-    def _setup_logging(self):
+    def _build_console(self):
+        self._setup_logging()
         self.console_text = tk.Text(self.console_frame, state="disabled",
                                      bg="#1e1e1e", fg="#d4d4d4",
                                      font=("Consolas", 10), wrap="word")
