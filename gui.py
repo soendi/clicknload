@@ -762,26 +762,25 @@ class MainWindow:
     def _fix_combo_dropdown(self):
         def find_and_color():
             try:
+                # 1. Direktes Popup-Attribut probieren (tk intern)
+                popdown = getattr(self.device_combo, "_popdown", None)
+                if popdown:
+                    lb = getattr(popdown, "f_listbox", None) or \
+                         getattr(popdown, "listbox", None)
+                    if lb and lb.winfo_class() == "Listbox":
+                        lb.configure(bg=self.BG3, fg=self.FG,
+                                      selectbackground=self.BG4, selectforeground=self.FG,
+                                      highlightthickness=0, borderwidth=0)
+                        return
+                # 2. Rekursiv alle Toplevels durchsuchen
                 for w in self.root.winfo_children():
                     self._color_listboxes_recursive(w)
             except Exception:
                 pass
 
-        # Fokus ist da, aber Dropdown braucht evtl. ein paar ms
         self.root.after(10, find_and_color)
         self.root.after(50, find_and_color)
         self.root.after(100, find_and_color)
-
-    def _color_listboxes_recursive(self, widget):
-        try:
-            if widget.winfo_class() == "Listbox":
-                widget.configure(bg=self.BG3, fg=self.FG,
-                                  selectbackground=self.BG4, selectforeground=self.FG,
-                                  highlightthickness=0, borderwidth=0)
-            for child in widget.winfo_children():
-                self._color_listboxes_recursive(child)
-        except Exception:
-            pass
 
     def _show_tray(self):
         if self._tray_pystray:
