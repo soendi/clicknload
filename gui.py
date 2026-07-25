@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+import customtkinter as ctk
 import threading
 import logging
 import os
@@ -14,7 +15,7 @@ import winreg
 
 log = logging.getLogger("cnl")
 
-CURRENT_VERSION = "1.0.34.0"
+CURRENT_VERSION = "1.0.35.0"
 RELEASES_API = "https://api.github.com/repos/soendi/clicknload/releases?per_page=10"
 
 REGISTRY_KEY = r"Software\ClickNLoadBridge"
@@ -428,8 +429,14 @@ class MainWindow:
         self.fields["myjd_password"].bind("<Return>", lambda e: self._on_creds_changed())
 
         lbl(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
-        self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38,
-                                          postcommand=self._fix_combo_dropdown)
+        self.device_combo = ctk.CTkComboBox(main, font=("Segoe UI", 10), width=280,
+                                             values=[], state="readonly",
+                                             fg_color=self.BG3, text_color=self.FG,
+                                             button_color=self.BG4, button_hover_color=self.ACCENT,
+                                             dropdown_fg_color=self.BG3, dropdown_hover_color=self.BG4,
+                                             dropdown_text_color=self.FG, border_color=self.BG4,
+                                             corner_radius=4, border_width=1,
+                                             command=lambda _: self._fix_combo_dropdown())
         self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
         row += 1
 
@@ -603,7 +610,7 @@ class MainWindow:
             self._tray_pystray.menu = menu
             self._tray_pystray.update_menu()
         except Exception as e:
-            log.warning(f"Tray-MenÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ Update fehlgeschlagen: {e}")
+            log.warning(f"Tray-MenÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¾Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ Update fehlgeschlagen: {e}")
 
     def _show_about(self):
         messagebox.showinfo("\u00dcber ClickNLoad Bridge",
@@ -759,7 +766,7 @@ class MainWindow:
             pass
 
     def _fix_combo_dropdown(self):
-        # ttk.Combobox postcommand wird aufgerufen wenn Dropdown geÃ¶ffnet wird
+        # ttk.Combobox postcommand wird aufgerufen wenn Dropdown geÃƒÂ¶ffnet wird
         try:
             popdown = getattr(self.device_combo, "_popdown", None)
             if popdown:
@@ -802,7 +809,7 @@ class MainWindow:
                 pystray.Menu.SEPARATOR,
             ]
 
-            # GerÃƒÂ¤t-Submenu: aktive mit Haken, inaktive ohne
+            # GerÃƒÆ’Ã‚Â¤t-Submenu: aktive mit Haken, inaktive ohne
             device_submenu_items = []
             if devices:
                 for d in devices:
@@ -812,10 +819,10 @@ class MainWindow:
                     )
             device_submenu_items.append(pystray.Menu.SEPARATOR)
             device_submenu_items.append(
-                pystray.MenuItem("GerÃƒÂ¤te neu laden", refresh_devices)
+                pystray.MenuItem("GerÃƒÆ’Ã‚Â¤te neu laden", refresh_devices)
             )
             device_menu = pystray.Menu(*device_submenu_items)
-            menu_items.append(pystray.MenuItem("GerÃƒÂ¤t", device_menu))
+            menu_items.append(pystray.MenuItem("GerÃƒÆ’Ã‚Â¤t", device_menu))
 
             menu_items.extend([
                 pystray.MenuItem("Nach Updates suchen", lambda: self.check_for_update()),
