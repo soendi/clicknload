@@ -14,7 +14,7 @@ import winreg
 
 log = logging.getLogger("cnl")
 
-CURRENT_VERSION = "1.0.33.0"
+CURRENT_VERSION = "1.0.34.0"
 RELEASES_API = "https://api.github.com/repos/soendi/clicknload/releases?per_page=10"
 
 REGISTRY_KEY = r"Software\ClickNLoadBridge"
@@ -603,7 +603,7 @@ class MainWindow:
             self._tray_pystray.menu = menu
             self._tray_pystray.update_menu()
         except Exception as e:
-            log.warning(f"Tray-MenÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ Update fehlgeschlagen: {e}")
+            log.warning(f"Tray-MenÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ Update fehlgeschlagen: {e}")
 
     def _show_about(self):
         messagebox.showinfo("\u00dcber ClickNLoad Bridge",
@@ -759,7 +759,7 @@ class MainWindow:
             pass
 
     def _fix_combo_dropdown(self):
-        # ttk.Combobox postcommand wird aufgerufen wenn Dropdown geöffnet wird
+        # ttk.Combobox postcommand wird aufgerufen wenn Dropdown geÃ¶ffnet wird
         try:
             popdown = getattr(self.device_combo, "_popdown", None)
             if popdown:
@@ -802,7 +802,7 @@ class MainWindow:
                 pystray.Menu.SEPARATOR,
             ]
 
-            # GerÃ¤t-Submenu: aktive mit Haken, inaktive ohne
+            # GerÃƒÂ¤t-Submenu: aktive mit Haken, inaktive ohne
             device_submenu_items = []
             if devices:
                 for d in devices:
@@ -812,10 +812,10 @@ class MainWindow:
                     )
             device_submenu_items.append(pystray.Menu.SEPARATOR)
             device_submenu_items.append(
-                pystray.MenuItem("GerÃ¤te neu laden", refresh_devices)
+                pystray.MenuItem("GerÃƒÂ¤te neu laden", refresh_devices)
             )
             device_menu = pystray.Menu(*device_submenu_items)
-            menu_items.append(pystray.MenuItem("GerÃ¤t", device_menu))
+            menu_items.append(pystray.MenuItem("GerÃƒÂ¤t", device_menu))
 
             menu_items.extend([
                 pystray.MenuItem("Nach Updates suchen", lambda: self.check_for_update()),
