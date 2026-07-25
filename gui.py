@@ -487,9 +487,9 @@ class MainWindow:
         chk(toast_row, "Toast anzeigen", self.toast_var).pack(side="left")
         lbl(toast_row, text="Dauer:").pack(side="left", padx=(12, 2))
         self.dur_var = tk.StringVar(value="10")
-        self.dur_combo = ctk.CTkComboBox(toast_row, font=("Segoe UI", 10), width=60, height=32,
-                                          values=[str(i) for i in range(1, 61)], state="readonly",
-                                          variable=self.dur_var,
+self.dur_combo = ctk.CTkComboBox(toast_row, font=("Segoe UI", 10), width=60, height=32,
+                                           values=["3", "5", "7", "10", "15", "20"], state="readonly",
+                                           variable=self.dur_var,
                                           fg_color=self.BG3, text_color=self.FG,
                                           button_color=self.BG4, button_hover_color=self.ACCENT,
                                           dropdown_fg_color=self.BG3, dropdown_hover_color=self.BG4,
