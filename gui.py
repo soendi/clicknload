@@ -427,7 +427,7 @@ class MainWindow:
         self.fields["myjd_email"].bind("<Return>", lambda e: self._on_creds_changed())
         self.fields["myjd_password"].bind("<Return>", lambda e: self._on_creds_changed())
 
-lbl(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
+        lbl(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
         self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38,
                                           postcommand=self._fix_combo_dropdown)
         self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
