@@ -415,10 +415,11 @@ class MainWindow:
         labels = [("myjd_email", "E-Mail"), ("myjd_password", "Passwort")]
         for key, label in labels:
             lbl(main, text=label).grid(row=row, column=0, sticky="w", pady=3)
-            e = tk.Entry(main, show="*" if key == "myjd_password" else None, width=40,
-                         bg=self.BG3, fg=self.FG, insertbackground=self.FG,
-                         relief="flat", highlightthickness=1, highlightcolor=self.ACCENT,
-                         highlightbackground=self.BG4)
+            e = ctk.CTkEntry(main, font=("Segoe UI", 10), width=280, height=32,
+                              show="*" if key == "myjd_password" else None,
+                              fg_color=self.BG3, text_color=self.FG,
+                              border_color=self.BG4, corner_radius=4, border_width=1,
+                              placeholder_text="")
             e.grid(row=row, column=1, sticky="ew", padx=6, pady=2)
             self.fields[key] = e
             row += 1
@@ -429,7 +430,7 @@ class MainWindow:
         self.fields["myjd_password"].bind("<Return>", lambda e: self._on_creds_changed())
 
         lbl(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
-        self.device_combo = ctk.CTkComboBox(main, font=("Segoe UI", 10), width=280,
+        self.device_combo = ctk.CTkComboBox(main, font=("Segoe UI", 10), width=280, height=32,
                                              values=[], state="readonly",
                                              fg_color=self.BG3, text_color=self.FG,
                                              button_color=self.BG4, button_hover_color=self.ACCENT,
@@ -437,14 +438,14 @@ class MainWindow:
                                              dropdown_text_color=self.FG, border_color=self.BG4,
                                              corner_radius=4, border_width=1,
                                              command=lambda _: self._fix_combo_dropdown())
-        self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
+        self.device_combo.grid(row=row, column=1, sticky="ew", padx=6, pady=2)
         row += 1
 
         lbl(main, text="Port").grid(row=row, column=0, sticky="w", pady=3)
-        self.port_field = tk.Entry(main, width=10, bg=self.BG3, fg=self.FG,
-                                    insertbackground=self.FG, relief="flat",
-                                    highlightthickness=1, highlightcolor=self.ACCENT,
-                                    highlightbackground=self.BG4)
+        self.port_field = ctk.CTkEntry(main, font=("Segoe UI", 10), width=80, height=32,
+                                        fg_color=self.BG3, text_color=self.FG,
+                                        border_color=self.BG4, corner_radius=4, border_width=1,
+                                        placeholder_text="9666")
         self.port_field.grid(row=row, column=1, sticky="w", padx=6, pady=2)
         row += 1
 
@@ -486,12 +487,16 @@ class MainWindow:
         chk(toast_row, "Toast anzeigen", self.toast_var).pack(side="left")
         lbl(toast_row, text="Dauer:").pack(side="left", padx=(12, 2))
         self.dur_var = tk.StringVar(value="10")
-        tk.Spinbox(toast_row, from_=1, to=60, textvariable=self.dur_var, width=4,
-                   bg=self.BG3, fg=self.FG, buttonbackground=self.BG4,
-                   buttonuprelief="flat", buttondownrelief="flat",
-                   relief="flat", highlightthickness=1, highlightcolor=self.ACCENT,
-                   highlightbackground=self.BG4).pack(side="left")
-        lbl(toast_row, text="s").pack(side="left")
+        self.dur_combo = ctk.CTkComboBox(toast_row, font=("Segoe UI", 10), width=60, height=32,
+                                          values=[str(i) for i in range(1, 61)], state="readonly",
+                                          variable=self.dur_var,
+                                          fg_color=self.BG3, text_color=self.FG,
+                                          button_color=self.BG4, button_hover_color=self.ACCENT,
+                                          dropdown_fg_color=self.BG3, dropdown_hover_color=self.BG4,
+                                          dropdown_text_color=self.FG, border_color=self.BG4,
+                                          corner_radius=4, border_width=1)
+        self.dur_combo.pack(side="left")
+        lbl(toast_row, text="s").pack(side="left", padx=(4, 0))
         row += 1
 
         self.console_start_var = tk.BooleanVar(value=False)
