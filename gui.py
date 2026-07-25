@@ -778,7 +778,7 @@ class MainWindow:
                 self._color_listboxes_recursive(w)
         self.root.after(1, do_color)
 
-def _show_tray(self):
+    def _show_tray(self):
         if self._tray_pystray:
             return
         try:
