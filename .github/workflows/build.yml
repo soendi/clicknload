@@ -25,7 +25,7 @@ jobs:
         run: pip install -r requirements.txt pyinstaller
 
       - name: Build EXE
-        run: pyinstaller --onefile --windowed --name "ClickNLoadBridge" --version-file version_info.txt --icon icon.ico --hidden-import myjd --hidden-import main --hidden-import dlc --hidden-import gui --hidden-import pythoncom --hidden-import win32com.client --hidden-import win32com --collect-all pywin32 run.py --distpath dist
+        run: pyinstaller --onefile --windowed --name "ClickNLoadBridge" --version-file version_info.txt --icon icon.ico --hidden-import myjd --hidden-import main --hidden-import dlc --hidden-import gui --hidden-import pythoncom --hidden-import win32com.client --hidden-import win32com --hidden-import customtkinter --collect-all pywin32 --collect-all customtkinter run.py --distpath dist
 
       - name: Install Inno Setup
         run: choco install innosetup -y --no-progress

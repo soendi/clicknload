@@ -1,3 +1,5 @@
 myjdapi>=1.1.10
 pystray>=0.19.0
 Pillow>=10.0.0
+customtkinter>=5.2.0
+customtkinter>=5.2.0
