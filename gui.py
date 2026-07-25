@@ -427,11 +427,10 @@ class MainWindow:
         self.fields["myjd_email"].bind("<Return>", lambda e: self._on_creds_changed())
         self.fields["myjd_password"].bind("<Return>", lambda e: self._on_creds_changed())
 
-        lbl(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
-        self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38)
+lbl(main, text="Ger\u00e4t").grid(row=row, column=0, sticky="w", pady=3)
+        self.device_combo = ttk.Combobox(main, font=("Segoe UI", 10), state="readonly", width=38,
+                                          postcommand=self._fix_combo_dropdown)
         self.device_combo.grid(row=row, column=1, sticky="ew", padx=6)
-        # Dropdown-Listbox dunkel fÃƒÆ’Ã‚Â¤rben via postcommand
-        self.device_combo.bind("<Button-1>", self._fix_combo_dropdown, add="+")
         row += 1
 
         lbl(main, text="Port").grid(row=row, column=0, sticky="w", pady=3)
@@ -759,24 +758,21 @@ class MainWindow:
         except Exception:
             pass
 
-    def _fix_combo_dropdown(self, event=None):
-        def do_color():
-            try:
-                # 1. Direktes Popup-Attribut probieren (tk intern)
-                popdown = getattr(self.device_combo, "_popdown", None)
-                if popdown:
-                    lb = getattr(popdown, "f_listbox", None) or getattr(popdown, "listbox", None)
-                    if lb and lb.winfo_class() == "Listbox":
-                        lb.configure(bg=self.BG3, fg=self.FG,
-                                     selectbackground=self.BG4, selectforeground=self.FG,
-                                     highlightthickness=0, borderwidth=0)
-                        return
-            except Exception:
-                pass
-            # 2. Fallback: alle Toplevels durchsuchen
-            for w in self.root.winfo_children():
-                self._color_listboxes_recursive(w)
-        self.root.after(1, do_color)
+    def _fix_combo_dropdown(self):
+        # ttk.Combobox postcommand wird aufgerufen wenn Dropdown geöffnet wird
+        try:
+            popdown = getattr(self.device_combo, "_popdown", None)
+            if popdown:
+                lb = getattr(popdown, "f_listbox", None) or getattr(popdown, "listbox", None)
+                if lb and lb.winfo_class() == "Listbox":
+                    lb.configure(bg=self.BG3, fg=self.FG,
+                                 selectbackground=self.BG4, selectforeground=self.FG,
+                                 highlightthickness=0, borderwidth=0)
+                    return
+        except Exception:
+            pass
+        # Fallback: alle Toplevels durchsuchen
+        self.root.after(1, lambda: self._color_listboxes_recursive(self.root))
 
     def _show_tray(self):
         if self._tray_pystray:
